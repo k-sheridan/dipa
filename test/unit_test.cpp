@@ -34,12 +34,13 @@ int main(int argc, char **argv)
 
 
 	tf::Transform w2c1;
-	w2c1.setRotation(tf::Quaternion(1/sqrt(2), 1/sqrt(2), 0, 0));
+	w2c1.setRotation(tf::Quaternion(1/sqrt(3), 1/sqrt(3), 0, 1/sqrt(3)));
+	//w2c1.setRotation(tf::Quaternion(1/sqrt(2), 1/sqrt(2), 0, 0));
 	w2c1.setOrigin(tf::Vector3(0, 0, 1));
 
 	cv::Mat_<float> K = (cv::Mat_<float>(3, 3) << 300, 0, 300, 0, 300, 300, 0, 0, 1);
 
-	GridRenderer gr(cv::Size(600, 600));
+	GridRenderer gr;
 
 	gr.setColors(cv::Vec3i(255, 255, 255), cv::Vec3i(0, 255, 0), cv::Vec3i(255, 0, 0));
 
@@ -49,6 +50,7 @@ int main(int argc, char **argv)
 	gr.outer_line_thickness = 0.08;
 
 	gr.setW2C(w2c1);
+	gr.setSize(cv::Size(600, 600));
 	gr.setIntrinsic(K);
 
 	cv::Mat test = gr.renderGrid();

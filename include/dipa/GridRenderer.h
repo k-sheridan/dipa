@@ -37,21 +37,29 @@
 class GridRenderer {
 public:
 
+	struct Quad{
+		cv::Vec3i color;
+		cv::Point3d v1;
+		cv::Point3d v2;
+		cv::Point3d v3;
+		cv::Point3d v4;
+	};
+
+	std::vector<Quad> grid;
+
 	int grid_size;
 	double grid_spacing;
 	double inner_line_thickness;
 	double outer_line_thickness;
 
-	GLuint fb, color, depth;
-
-	cv::Vec3f WHITE, RED, GREEN;
+	cv::Vec3i WHITE, RED, GREEN;
 
 	cv::Mat_<float> K;
 	cv::Size size;
-	tf::Transform w2c;
-	tf::Transform c2w;
+	cv::Mat_<float> w2c;
+	cv::Mat_<float> c2w;
 
-	GridRenderer(cv::Size sz);
+	GridRenderer();
 	virtual ~GridRenderer();
 
 	void setIntrinsic(cv::Mat_<float> K);
@@ -60,19 +68,19 @@ public:
 		size = sz;
 	}
 
+	cv::Mat_<float> tf2cv(tf::Transform tf);
+
 	void setC2W(tf::Transform tf)
 	{
-		c2w = tf;
-		w2c = c2w.inverse();
+		c2w = tf2cv(tf);
+		w2c = tf2cv(tf.inverse());
 	}
 
 	void setW2C(tf::Transform tf)
 	{
-		w2c = tf;
-		c2w = w2c.inverse();
+		w2c = tf2cv(tf);
+		c2w = tf2cv(tf.inverse());
 	}
-
-	unsigned char* getPixelData( int x1, int y1, int x2, int y2 );
 
 	void generateGrid();
 
