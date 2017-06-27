@@ -87,44 +87,6 @@ void GridRenderer::setColors(cv::Vec3i w, cv::Vec3i g, cv::Vec3i r)
 	RED = cv::Vec3f(r[0] / 255.0, r[1] / 255.0, r[2] / 255.0);
 }
 
-cv::Mat GridRenderer::tfTransform2GLViewMat(tf::Transform trans)
-{
-	cv::Mat viewMatrix = cv::Mat::zeros(4, 4, CV_64F);
-
-	//column major
-	viewMatrix.at<double>(0, 0) = trans.getBasis().getColumn(0).x();
-	viewMatrix.at<double>(1, 0) = trans.getBasis().getColumn(0).y();
-	viewMatrix.at<double>(2, 0) = trans.getBasis().getColumn(0).z();
-
-	viewMatrix.at<double>(0, 1) = trans.getBasis().getColumn(1).x();
-	viewMatrix.at<double>(1, 1) = trans.getBasis().getColumn(1).y();
-	viewMatrix.at<double>(2, 1) = trans.getBasis().getColumn(1).z();
-
-	viewMatrix.at<double>(0, 2) = trans.getBasis().getColumn(2).x();
-	viewMatrix.at<double>(1, 2) = trans.getBasis().getColumn(2).y();
-	viewMatrix.at<double>(2, 2) = trans.getBasis().getColumn(2).z();
-
-	viewMatrix.at<double>(0, 3) = trans.getOrigin().x();
-	viewMatrix.at<double>(1, 3) = trans.getOrigin().y();
-	viewMatrix.at<double>(2, 3) = trans.getOrigin().z();
-
-	viewMatrix.at<double>(3, 3) = 0;
-
-	//gl transfer
-	cv::Mat cvToGl = cv::Mat::zeros(4, 4, CV_64F);
-	cvToGl.at<double>(0, 0) = 1.0f;
-	cvToGl.at<double>(1, 1) = -1.0f; // Invert the y axis
-	cvToGl.at<double>(2, 2) = -1.0f; // invert the z axis
-	cvToGl.at<double>(3, 3) = 1.0f;
-	viewMatrix = cvToGl * viewMatrix;
-
-	cv::Mat glViewMatrix = cv::Mat::zeros(4, 4, CV_64F);
-	cv::transpose(viewMatrix , glViewMatrix);
-
-	return glViewMatrix;
-
-}
-
 void GridRenderer::setIntrinsic(cv::Mat_<float> K)
 {
 	this->K = K;
@@ -302,8 +264,6 @@ cv::Mat GridRenderer::renderGrid()
 
 
 	//set up the intrinsic parameters
-	glMatrixMode(GL_PROJECTION);
-	/*glLoadIdentity();
 	double fx = K(0);
 	double fy = K(4);
 	double cx = K(2);
@@ -313,24 +273,39 @@ cv::Mat GridRenderer::renderGrid()
 	double zmin = 0.1;
 	double zmax = 50;
 	double s = 0;
+
+	glMatrixMode(GL_PROJECTION); // Select The Projection Matrix
+	glLoadIdentity();   // Reset The Projection Matrix
+	glPushMatrix();
+
 	GLdouble perspMatrix[16]={2*fx/W,0,0,0,2*s/W,2*fy/H,0,0,2*(cx/W)-1,2*(cy/H)-1,(zmax+zmin)/(zmax-zmin),1,0,0,2*zmax*zmin/(zmin-zmax),0};
-	glLoadMatrixd(perspMatrix);*/
+	glMultMatrixd(perspMatrix);
 
-
+	glPopMatrix();
 
 
 	glMatrixMode(GL_MODELVIEW);
 
 	glLoadIdentity();
 
-	//move the camera
-	cv::Mat glViewMatrix = tfTransform2GLViewMat(c2w);
+	//move the object
 
-	glLoadMatrixd(&glViewMatrix.at<double>(0, 0));
+	double arr[16] = {c2w.getBasis().getRow(0).x(), -c2w.getBasis().getRow(1).x(), -c2w.getBasis().getRow(2).x(), 0,
+			c2w.getBasis().getRow(0).y(), -c2w.getBasis().getRow(1).y(), -c2w.getBasis().getRow(2).y(), 0,
+			c2w.getBasis().getRow(0).z(), -c2w.getBasis().getRow(1).z(), -c2w.getBasis().getRow(2).z(), 0,
+			c2w.getOrigin().x(), -c2w.getOrigin().y(), -c2w.getOrigin().z(), 1.0};
+
+	glPushMatrix();
+
+	glLoadMatrixd(arr);
 
 	// render the grid
 	generateGrid();
 
+	glPopMatrix();
+
+
+	//IMAGE GRABBING
 	// get the image
 	cv::Mat temp = cv::Mat(size.height, size.width, CV_8UC3);
 	cv::Mat result;

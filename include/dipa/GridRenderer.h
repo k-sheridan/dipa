@@ -48,6 +48,7 @@ public:
 
 	cv::Mat_<float> K;
 	cv::Size size;
+	tf::Transform w2c;
 	tf::Transform c2w;
 
 	GridRenderer(cv::Size sz);
@@ -62,9 +63,14 @@ public:
 	void setC2W(tf::Transform tf)
 	{
 		c2w = tf;
+		w2c = c2w.inverse();
 	}
 
-	cv::Mat tfTransform2GLViewMat(tf::Transform trans);
+	void setW2C(tf::Transform tf)
+	{
+		w2c = tf;
+		c2w = w2c.inverse();
+	}
 
 	unsigned char* getPixelData( int x1, int y1, int x2, int y2 );
 
