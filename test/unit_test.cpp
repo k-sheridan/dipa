@@ -16,6 +16,8 @@
 #include "opencv2/xfeatures2d.hpp"
 #include "opencv2/video.hpp"
 
+#include "opencv2/reg/mapprojec.hpp"
+
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/message_filter.h>
 #include <tf2_ros/transform_listener.h>
@@ -53,10 +55,11 @@ int main(int argc, char **argv)
 	gr.setSize(cv::Size(600, 600));
 	gr.setIntrinsic(K);
 
+	/*
 	cv::Mat test = gr.renderGrid();
 
 	cv::imshow("test", test);
-	cv::waitKey(30);
+	cv::waitKey(30);*/
 
 	while(ros::ok())
 	{

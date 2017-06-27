@@ -33,16 +33,17 @@
 
 #define RENDER_DEBUG = true
 
+#define _WHITE cv::Vec3i(255, 255, 255)
+#define _RED cv::Vec3i(0, 0, 255)
+#define _GREEN cv::Vec3i(0, 255, 0)
+
 
 class GridRenderer {
 public:
 
 	struct Quad{
 		cv::Vec3i color;
-		cv::Point3d v1;
-		cv::Point3d v2;
-		cv::Point3d v3;
-		cv::Point3d v4;
+		std::vector<cv::Point2f> vertices;
 	};
 
 	std::vector<Quad> grid;
@@ -86,7 +87,11 @@ public:
 
 	void setColors(cv::Vec3i w, cv::Vec3i g, cv::Vec3i r);
 
-	cv::Mat renderGrid();
+	cv::Mat createOrthoGrid();
+
+	cv::Mat renderGridByProjection();
+
+	cv::Mat renderGridByTransform();
 
 
 };

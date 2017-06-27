@@ -8,7 +8,11 @@
 #include <dipa/GridRenderer.h>
 
 GridRenderer::GridRenderer() {
+	WHITE = _WHITE;
+	GREEN = _GREEN;
+	RED = _RED;
 
+	generateGrid();
 }
 
 GridRenderer::~GridRenderer() {
@@ -27,6 +31,14 @@ void GridRenderer::setIntrinsic(cv::Mat_<float> K)
 	this->K = K;
 }
 
+cv::Mat_<float> GridRenderer::tf2cv(tf::Transform tf)
+{
+	cv::Mat_<float> out = (cv::Mat_<float>(3, 4) << tf.getBasis().getRow(0).x(), tf.getBasis().getRow(0).y(), tf.getBasis().getRow(0).z(), tf.getOrigin().x(),
+			tf.getBasis().getRow(1).x(), tf.getBasis().getRow(1).y(), tf.getBasis().getRow(1).z(), tf.getOrigin().y(),
+			tf.getBasis().getRow(2).x(), tf.getBasis().getRow(2).y(), tf.getBasis().getRow(2).z(), tf.getOrigin().z());
+
+	return out;
+}
 
 void GridRenderer::generateGrid()
 {
@@ -48,17 +60,17 @@ void GridRenderer::generateGrid()
 
 		if(line != 0 && line != grid_size)
 		{
-			q.v1 = cv::Point3d( x - ilt, max, 0);
-			q.v2 = cv::Point3d( x + ilt, max, 0);
-			q.v3 = cv::Point3d( x + ilt, min, 0);
-			q.v4 = cv::Point3d( x - ilt, min, 0);
+			q.vertices.push_back(cv::Point2f( x - ilt, max));
+			q.vertices.push_back(cv::Point2f( x + ilt, max));
+			q.vertices.push_back(cv::Point2f( x + ilt, min));
+			q.vertices.push_back(cv::Point2f( x - ilt, min));
 		}
 		else
 		{
-			q.v1 = cv::Point3d( x - olt, max, 0);
-			q.v2 = cv::Point3d( x + olt, max, 0);
-			q.v3 = cv::Point3d( x + olt, min, 0);
-			q.v4 = cv::Point3d( x - olt, min, 0);
+			q.vertices.push_back(cv::Point2f( x - olt, max));
+			q.vertices.push_back(cv::Point2f( x + olt, max));
+			q.vertices.push_back(cv::Point2f( x + olt, min));
+			q.vertices.push_back(cv::Point2f( x - olt, min));
 		}
 
 		grid.push_back(q);
@@ -76,10 +88,10 @@ void GridRenderer::generateGrid()
 
 		if(line != 0 && line != grid_size)
 		{
-			q.v1 = cv::Point3d(max, y - ilt, 0);
-			q.v1 = cv::Point3d(max, y + ilt, 0);
-			q.v1 = cv::Point3d(min, y + ilt, 0);
-			q.v1 = cv::Point3d(min, y - ilt, 0);
+			q.vertices.push_back(cv::Point2f(max, y - ilt));
+			q.vertices.push_back(cv::Point2f(max, y + ilt));
+			q.vertices.push_back(cv::Point2f(min, y + ilt));
+			q.vertices.push_back(cv::Point2f(min, y - ilt));
 		}
 
 		grid.push_back(q);
@@ -90,9 +102,13 @@ void GridRenderer::generateGrid()
 
 }
 
-cv::Mat GridRenderer::renderGrid()
+cv::Mat GridRenderer::renderGridByProjection()
 {
 	cv::Mat result = cv::Mat(size, CV_8UC3);
+
+	cv::Mat_<float> Kinv = K.inv();
+
+
 
 	return result;
 }
