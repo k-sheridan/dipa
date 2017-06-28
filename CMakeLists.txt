@@ -4,6 +4,8 @@ project(dipa)
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   geometry_msgs

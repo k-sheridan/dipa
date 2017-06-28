@@ -195,6 +195,14 @@ void GridRenderer::generateGrid()
 	double min = -(grid_size * grid_spacing / 2);
 	double max = (grid_size * grid_spacing / 2);
 
+
+	glColor3f(0, 0, 1);
+
+	glVertex3f( min, min, 0);
+	glVertex3f( min, max, 0);
+	glVertex3f( max, max, 0);
+	glVertex3f( max, min, 0);
+
 	int line = 0;
 	for(double x = min; x < max + grid_spacing; x += grid_spacing)
 	{
@@ -286,23 +294,17 @@ cv::Mat GridRenderer::renderGrid()
 
 	glMatrixMode(GL_MODELVIEW);
 
+	//move object
 	glLoadIdentity();
 
-	//move the object
+	tf::Vector3 obj = w2c * tf::Vector3(0, 0, 1);
+	tf::Vector3 up = w2c * tf::Vector3(0, -1, 0);
 
-	double arr[16] = {c2w.getBasis().getRow(0).x(), -c2w.getBasis().getRow(1).x(), -c2w.getBasis().getRow(2).x(), 0,
-			c2w.getBasis().getRow(0).y(), -c2w.getBasis().getRow(1).y(), -c2w.getBasis().getRow(2).y(), 0,
-			c2w.getBasis().getRow(0).z(), -c2w.getBasis().getRow(1).z(), -c2w.getBasis().getRow(2).z(), 0,
-			c2w.getOrigin().x(), -c2w.getOrigin().y(), -c2w.getOrigin().z(), 1.0};
+	gluLookAt(w2c.getOrigin().x(), w2c.getOrigin().y(), w2c.getOrigin().z(), obj.x(), obj.y(), obj.z(), up.x(), up.y(), up.z());
 
-	glPushMatrix();
-
-	glLoadMatrixd(arr);
 
 	// render the grid
 	generateGrid();
-
-	glPopMatrix();
 
 
 	//IMAGE GRABBING
@@ -311,7 +313,8 @@ cv::Mat GridRenderer::renderGrid()
 	cv::Mat result;
 
 	//glutSwapBuffers();
-	glReadBuffer(GL_BACK);
+	//glReadBuffer(GL_BACK);
+	glFlush();
 
 	//glPixelStorei(GL_PACK_ALIGNMENT, (temp.step & 3) ? 1 : 4);
 	glPixelStorei(GL_PACK_ROW_LENGTH, temp.step/temp.elemSize());
