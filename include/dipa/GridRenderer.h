@@ -87,11 +87,7 @@ public:
 
 	void setColors(cv::Vec3i w, cv::Vec3i g, cv::Vec3i r);
 
-	cv::Mat createOrthoGrid();
-
 	cv::Mat renderGridByProjection();
-
-	cv::Mat renderGridByTransform();
 
 
 };
