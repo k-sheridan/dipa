@@ -7,18 +7,22 @@
 
 #include <ros/ros.h>
 
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/calib3d.hpp>
-#include <opencv2/features2d.hpp>
-#include "opencv2/core/core.hpp"
-#include <opencv2/core/opengl.hpp>
-#include "opencv2/features2d/features2d.hpp"
-#include "opencv2/xfeatures2d.hpp"
-#include "opencv2/video.hpp"
+#include <iostream>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/highgui.hpp> // OpenCV window I/O
+#include <opencv2/imgproc.hpp> // OpenCV image transformations
+#include <opencv2/imgproc/types_c.h>
+#include <opencv2/imgcodecs/imgcodecs_c.h>
+#include <opencv2/highgui/highgui_c.h>
 
+#include "opencv2/reg/mapaffine.hpp"
+#include "opencv2/reg/mapshift.hpp"
 #include "opencv2/reg/mapprojec.hpp"
+#include "opencv2/reg/mappergradshift.hpp"
+#include "opencv2/reg/mappergradeuclid.hpp"
+#include "opencv2/reg/mappergradsimilar.hpp"
+#include "opencv2/reg/mappergradaffine.hpp"
 #include "opencv2/reg/mappergradproj.hpp"
-#include "opencv2/reg/mapper.hpp"
 #include "opencv2/reg/mapperpyramid.hpp"
 
 #include <tf2_ros/transform_broadcaster.h>
@@ -31,6 +35,7 @@
 
 #include <image_transport/image_transport.h>
 #include "std_msgs/String.h"
+#include "sensor_msgs/Image.h"
 #include <sstream>
 #include <cv_bridge/cv_bridge.h>
 
@@ -60,9 +65,13 @@ static void showDifference(const cv::Mat& image1, const cv::Mat& image2, const c
 	imshow(title, imgSh);
 }
 
-void imgcb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs::CameraInfoConstPtr& cam)
+void imgcb(const sensor_msgs::ImageConstPtr& img)
 {
 	cv::Mat temp = cv_bridge::toCvShare(img, img->encoding)->image.clone();
+
+	cv::resize(temp, temp, cv::Size(320, 240));
+
+	temp.convertTo(temp, CV_64FC1); // convert to double 1 channel
 
 	if(!firstSet)
 	{
@@ -84,6 +93,10 @@ void imgcb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs::CameraInfoC
 	cv::reg::MapProjec* mapProj = dynamic_cast<cv::reg::MapProjec*>(mapPtr.get());
 	mapProj->normalize();
 
+	cv::Mat dest;
+	mapProj->inverseWarp(temp, dest);
+	showDifference(first, dest, "fixed");
+
 }
 
 int main(int argc, char **argv)
@@ -94,7 +107,7 @@ int main(int argc, char **argv)
 
 	image_transport::ImageTransport it(nh);
 
-	image_transport::CameraSubscriber quadDetectCameraSub = it.subscribeCamera("m7/camera/image_rect", 2, imgcb);
+	ros::Subscriber imgsub = nh.subscribe<sensor_msgs::Image>("m7/camera/image_rect", 2, imgcb);
 
 
 
