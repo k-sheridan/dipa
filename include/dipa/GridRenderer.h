@@ -33,32 +33,45 @@
 
 #define RENDER_DEBUG = true
 
-#define _WHITE cv::Vec3i(255, 255, 255)
-#define _RED cv::Vec3i(0, 0, 255)
-#define _GREEN cv::Vec3i(0, 255, 0)
+#define _WHITE cv::Vec3b(255, 255, 255)
+#define _RED cv::Vec3b(0, 0, 255)
+#define _GREEN cv::Vec3b(0, 255, 0)
+
+#define _FLOOR cv::Vec3b(255, 0, 0)
+
+#define _BACKGROUND cv::Vec3b(0, 0, 0)
 
 
 class GridRenderer {
 public:
 
 	struct Quad{
-		cv::Vec3i color;
+		cv::Vec3b color;
 		std::vector<cv::Point2f> vertices;
+
+		/*
+		 * test if point on xy plane is in this quad
+		 */
+		bool pointInQuad(tf::Vector3 pt)
+		{
+			return cv::pointPolygonTest(vertices, cv::Point2f(pt.x(), pt.y()), false) >= 0;
+		}
 	};
 
-	std::vector<Quad> grid;
+	std::deque<Quad> grid;
 
 	int grid_size;
 	double grid_spacing;
 	double inner_line_thickness;
 	double outer_line_thickness;
+	double boundary_padding;
 
-	cv::Vec3i WHITE, RED, GREEN;
+	cv::Vec3b WHITE, RED, GREEN;
 
 	cv::Mat_<float> K;
 	cv::Size size;
-	cv::Mat_<float> w2c;
-	cv::Mat_<float> c2w;
+	tf::Transform w2c;
+	tf::Transform c2w;
 
 	GridRenderer();
 	virtual ~GridRenderer();
@@ -73,20 +86,21 @@ public:
 
 	void setC2W(tf::Transform tf)
 	{
-		c2w = tf2cv(tf);
-		w2c = tf2cv(tf.inverse());
+		c2w = tf;
+		w2c = tf.inverse();
 	}
 
 	void setW2C(tf::Transform tf)
 	{
-		w2c = tf2cv(tf);
-		c2w = tf2cv(tf.inverse());
+		w2c = tf;
+		c2w = tf.inverse();
 	}
 
 	void generateGrid();
 
-	void setColors(cv::Vec3i w, cv::Vec3i g, cv::Vec3i r);
+	void setColors(cv::Vec3b w, cv::Vec3b g, cv::Vec3b r);
 
+	tf::Vector3 project2XYPlane(cv::Mat_<float> dir, bool& behind);
 	cv::Mat renderGridByProjection();
 
 

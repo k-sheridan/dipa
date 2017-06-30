@@ -12,6 +12,8 @@ GridRenderer::GridRenderer() {
 	GREEN = _GREEN;
 	RED = _RED;
 
+	boundary_padding = 1;
+
 	generateGrid();
 }
 
@@ -19,7 +21,7 @@ GridRenderer::~GridRenderer() {
 
 }
 
-void GridRenderer::setColors(cv::Vec3i w, cv::Vec3i g, cv::Vec3i r)
+void GridRenderer::setColors(cv::Vec3b w, cv::Vec3b g, cv::Vec3b r)
 {
 	WHITE = w;
 	GREEN = g;
@@ -50,6 +52,13 @@ void GridRenderer::generateGrid()
 	double min = -(grid_size * grid_spacing / 2);
 	double max = (grid_size * grid_spacing / 2);
 
+	Quad floor;
+	floor.color = _FLOOR;
+	floor.vertices.push_back(cv::Point2f( max + boundary_padding, max + boundary_padding));
+	floor.vertices.push_back(cv::Point2f( min - boundary_padding, max + boundary_padding));
+	floor.vertices.push_back(cv::Point2f( min - boundary_padding, min - boundary_padding));
+	floor.vertices.push_back(cv::Point2f( max + boundary_padding, min - boundary_padding));
+
 	int line = 0;
 	for(double x = min; x < max + grid_spacing; x += grid_spacing)
 	{
@@ -73,7 +82,7 @@ void GridRenderer::generateGrid()
 			q.vertices.push_back(cv::Point2f( x - olt, min));
 		}
 
-		grid.push_back(q);
+		grid.push_front(q);
 
 		line++;
 	}
@@ -94,12 +103,38 @@ void GridRenderer::generateGrid()
 			q.vertices.push_back(cv::Point2f(min, y - ilt));
 		}
 
-		grid.push_back(q);
+		grid.push_front(q);
 
 		line++;
 	}
 
 
+}
+
+tf::Vector3 GridRenderer::project2XYPlane(cv::Mat_<float> dir, bool& behind)
+{
+	tf::Vector3 dir_world = (w2c * tf::Vector3(dir(0), dir(1), dir(2))) - w2c.getOrigin();
+
+	// z = z0 + dz*dt;
+	// 0 = z0 + dz*dt;
+	// -z0/dz = dt;
+
+	double dt = (-w2c.getOrigin().z() / dir_world.z());
+
+	tf::Vector3 proj = w2c.getOrigin() + dir_world * (-w2c.getOrigin().z() / dir_world.z()) * dt;
+
+	if(dt <= 0)
+	{
+		behind = true;
+	}
+	else
+	{
+		behind = false;
+	}
+
+	ROS_ASSERT(proj.z() == 0);
+
+	return proj;
 }
 
 cv::Mat GridRenderer::renderGridByProjection()
@@ -108,7 +143,40 @@ cv::Mat GridRenderer::renderGridByProjection()
 
 	cv::Mat_<float> Kinv = K.inv();
 
+	for(int i = 0; i < result.rows; i++)
+	{
+		for(int j = 0; j < result.cols; j++)
+		{
+			cv::Mat_<float> dir = Kinv * (cv::Mat_<float>(3, 1) << j, i, 1);
 
+			bool behind = false;
+
+			tf::Vector3 proj = project2XYPlane(dir, behind);
+
+			if(behind) // break and set the color to background
+			{
+				continue;
+			}
+
+			bool colorSet = false;
+
+			for(auto e : grid)
+			{
+				if(e.pointInQuad(proj))
+				{
+					colorSet = true;
+					result.at<cv::Vec3b>(i, j) = e.color;
+					break;
+				}
+			}
+
+			if(!colorSet)
+			{
+				//set the color to background
+				result.at<cv::Vec3b>(i, j) = _BACKGROUND;
+			}
+		}
+	}
 
 	return result;
 }
