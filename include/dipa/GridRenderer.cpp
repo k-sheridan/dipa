@@ -144,17 +144,21 @@ void GridRenderer::generateGrid()
 					if(x_line == 0 && y_line == 0)
 					{
 						grid_corners.push_back(tf::Vector3(x - olt / 2.0, y - olt / 2.0, 0));
+						grid_corners.push_back(tf::Vector3(x + olt / 2.0, y + olt / 2.0, 0));
 					}
 					else if(x_line == grid_size && y_line == 0)
 					{
 						grid_corners.push_back(tf::Vector3(x + olt / 2.0, y - olt / 2.0, 0));
+						grid_corners.push_back(tf::Vector3(x - olt / 2.0, y + olt / 2.0, 0));
 					}
 					else if(x_line == grid_size && y_line == grid_size)
 					{
 						grid_corners.push_back(tf::Vector3(x + olt / 2.0, y + olt / 2.0, 0));
+						grid_corners.push_back(tf::Vector3(x - olt / 2.0, y - olt / 2.0, 0));
 					}
 					else{
 						grid_corners.push_back(tf::Vector3(x - olt / 2.0, y + olt / 2.0, 0));
+						grid_corners.push_back(tf::Vector3(x + olt / 2.0, y - olt / 2.0, 0));
 					}
 
 				}
