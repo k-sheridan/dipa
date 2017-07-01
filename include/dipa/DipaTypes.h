@@ -81,6 +81,15 @@ struct Matches{
 		}
 		return z;
 	}
+
+	std::vector<cv::Point2f> getObjectPixelsInOrder(){
+		std::vector<cv::Point2f> z;
+		for(auto e : matches)
+		{
+			z.push_back(cv::Point2f(e.obj_px.x, e.obj_px.y));
+		}
+		return z;
+	}
 };
 
 

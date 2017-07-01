@@ -8,7 +8,7 @@
 #include <dipa/Dipa.h>
 
 Dipa::Dipa() {
-	ros::NodeHandle nh;
+	//ros::NodeHandle nh;
 
 
 }
@@ -19,8 +19,10 @@ Dipa::~Dipa() {
 
 void Dipa::setupKDTree()
 {
+	ROS_DEBUG("setting up kdtree");
 	indexParams = cv::flann::KDTreeIndexParams();
 	kdtree = cv::flann::Index(cv::Mat(detected_corners).reshape(1), indexParams);
+	ROS_DEBUG("tree setup");
 }
 
 void Dipa::findClosestPoints(Matches& model)
@@ -37,6 +39,7 @@ vector<float> dists;
 kdtree.radiusSearch(query, indices, dists, range, numOfPoints);
 	 */
 
+	ROS_DEBUG("finding nearest neighbors");
 	double maxRadius = sqrt(this->image_size.width * this->image_size.width + this->image_size.height * this->image_size.height);
 
 	for(auto& e : model.matches)
