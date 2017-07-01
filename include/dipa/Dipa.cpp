@@ -65,11 +65,26 @@ kdtree.radiusSearch(query, indices, dists, range, numOfPoints);
 		std::vector<int> indexes;
 		std::vector<float> dists;
 
-		tree.knnSearch(query, indexes, dists, 1);
+		tree.knnSearch(query, indexes, dists, 4);
 
-		e.measurement = cv::Point2d(detected_corners.at(indexes.front()).x, detected_corners.at(indexes.front()).y);
-		e.pixelNorm = dists.front();
-		//ROS_DEBUG_STREAM("norm: " << e.pixelNorm);
+		int best = 0;
+		double min = DBL_MAX;
+
+		for(auto j : indexes)
+		{
+			e.measurement = cv::Point2d(detected_corners.at(j).x, detected_corners.at(j).y);
+
+			double temp = e.getPixelNorm();
+
+			if(temp < min)
+			{
+				best = j;
+				min = temp;
+			}
+		}
+
+		e.measurement = cv::Point2d(detected_corners.at(best).x, detected_corners.at(best).y);
+		//ROS_DEBUG_STREAM("norm: " << e.getPixelNorm());
 	}
 
 	ROS_DEBUG("neighbors found");

@@ -36,16 +36,12 @@ struct Match{
 
 	double getPixelNorm()
 	{
-		if(pixelNorm < 0)
-		{
-			double dx = obj_px.x - measurement.x;
-			double dy = obj_px.y - measurement.y;
-			return sqrt(dx*dx+dy*dy);
-		}
-		else
-		{
-			return pixelNorm;
-		}
+
+		double dx = obj_px.x - measurement.x;
+		double dy = obj_px.y - measurement.y;
+		pixelNorm = sqrt(dx*dx+dy*dy);
+		return pixelNorm;
+
 	}
 };
 
@@ -58,7 +54,7 @@ struct Matches{
 		{
 			cv::line(in, e.obj_px, e.measurement, cv::Scalar(255, 255, 255));
 			cv::drawMarker(in, e.obj_px, cv::Scalar(255, 255, 0), cv::MARKER_SQUARE, 4);
-			cv::drawMarker(in, e.measurement, cv::Scalar(0, 255, 0), cv::MARKER_SQUARE, 4);
+			cv::drawMarker(in, e.measurement, cv::Scalar(0, 255, 0), cv::MARKER_STAR, 4);
 		}
 
 		return in;
@@ -86,7 +82,9 @@ struct Matches{
 		std::vector<cv::Point2f> z;
 		for(auto e : matches)
 		{
+			//ROS_DEBUG_STREAM(e.obj_px.x << " before");
 			z.push_back(cv::Point2f(e.obj_px.x, e.obj_px.y));
+			//ROS_DEBUG_STREAM(z.back().x << " after");
 		}
 		return z;
 	}
