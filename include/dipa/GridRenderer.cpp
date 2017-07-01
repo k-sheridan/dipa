@@ -162,11 +162,13 @@ void GridRenderer::generateGrid()
 				{
 					if(x_line == 0) // two to the right
 					{
-
+						grid_corners.push_back(tf::Vector3(x + olt / 2.0, y + olt / 2.0, 0));
+						grid_corners.push_back(tf::Vector3(x + olt / 2.0, y - olt / 2.0, 0));
 					}
 					else // two to the left
 					{
-
+						grid_corners.push_back(tf::Vector3(x - olt / 2.0, y + olt / 2.0, 0));
+						grid_corners.push_back(tf::Vector3(x - olt / 2.0, y - olt / 2.0, 0));
 					}
 
 				}
@@ -177,6 +179,8 @@ void GridRenderer::generateGrid()
 					grid_corners.push_back(tf::Vector3(x - ilt / 2.0, y + ilt / 2.0, 0));
 					grid_corners.push_back(tf::Vector3(x - ilt / 2.0, y - ilt / 2.0, 0));
 					grid_corners.push_back(tf::Vector3(x + ilt / 2.0, y - ilt / 2.0, 0));
+
+					ROS_DEBUG_STREAM("drew center about: " << x << ", " << y);
 				}
 			}
 
@@ -277,11 +281,11 @@ cv::Point2f GridRenderer::projectPoint(tf::Vector3 in, bool& good)
 	return px;
 }
 
-cv::Mat drawCorners(cv::Mat in, std::vector<cv::Point2f> corners)
+cv::Mat GridRenderer::drawCorners(cv::Mat in, std::vector<cv::Point2f> corners)
 {
 	for(auto e : corners)
 	{
-		cv::drawMarker(in, e, cv::Scalar(255, 255, 0));
+		cv::drawMarker(in, e, cv::Scalar(255, 255, 0), cv::MARKER_SQUARE, 4);
 	}
 
 	return in;

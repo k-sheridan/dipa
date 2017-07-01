@@ -111,16 +111,16 @@ int main(int argc, char **argv)
 
 
 	tf::Transform w2c1;
-	w2c1.setRotation(tf::Quaternion(1/sqrt(3), 1/sqrt(3), 0, 1/sqrt(3)));
+	w2c1.setRotation(tf::Quaternion(1, 0, 0, 0));
 	//w2c1.setRotation(tf::Quaternion(1/sqrt(2), 1/sqrt(2), 0, 0));
-	w2c1.setOrigin(tf::Vector3(0, 0, 1));
+	w2c1.setOrigin(tf::Vector3(0, 0, 3));
 
-	cv::Mat_<float> K = (cv::Mat_<float>(3, 3) << 300, 0, 300, 0, 300, 400, 0, 0, 1);
+	cv::Mat_<float> K = (cv::Mat_<float>(3, 3) << 300, 0, 300, 0, 300, 300, 0, 0, 1);
 
 	GridRenderer gr;
 
 	gr.setW2C(w2c1);
-	gr.setSize(cv::Size(600, 800));
+	gr.setSize(cv::Size(600, 600));
 	gr.setIntrinsic(K);
 
 
@@ -128,7 +128,10 @@ int main(int argc, char **argv)
 
 	while(ros::ok())
 	{
-		cv::imshow("render", gr.sourceRender);
+		ROS_DEBUG("draw");
+		cv::Mat blank = cv::Mat::zeros(cv::Size(600, 600), CV_8UC3);
+		blank = gr.drawCorners(blank, gr.renderGridCorners());
+		cv::imshow("render", blank);
 		cv::waitKey(30);
 	}
 
