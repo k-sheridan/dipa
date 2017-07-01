@@ -44,27 +44,10 @@
 
 #include <dipa/GridRenderer.h>
 
+#include <dipa/DipaTypes.h>
+
 class Dipa {
 public:
-
-	struct Match{
-		cv::Point3d obj;
-		cv::Point2d obj_px;
-		cv::Point2d measurement;
-
-		double getPixelNorm()
-		{
-			double dx = obj_px.x - measurement.x;
-			double dy = obj_px.y - measurement.y;
-			return sqrt(dx*dx+dy*dy);
-		}
-	};
-
-	struct Matches{
-		std::vector<Match> matches;
-
-
-	};
 
 	Dipa();
 	virtual ~Dipa();

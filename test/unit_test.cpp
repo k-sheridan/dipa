@@ -41,6 +41,7 @@
 
 #include <dipa/GridRenderer.h>
 
+
 cv::Mat first;
 bool firstSet = false;
 
@@ -130,7 +131,7 @@ int main(int argc, char **argv)
 	{
 		ROS_DEBUG("draw");
 		cv::Mat blank = cv::Mat::zeros(cv::Size(600, 600), CV_8UC3);
-		blank = gr.drawCorners(blank, gr.renderGridCorners());
+		blank = gr.renderGridCorners().draw(blank);
 		cv::imshow("render", blank);
 		cv::waitKey(30);
 	}

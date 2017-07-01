@@ -31,6 +31,8 @@
 #include <tf/tf.h>
 #include <tf/tfMessage.h>
 
+#include <dipa/DipaTypes.h>
+
 #define RENDER_DEBUG = true
 
 #define _WHITE cv::Vec3b(255, 255, 255)
@@ -123,7 +125,7 @@ public:
 
 	cv::Mat drawCorners(cv::Mat in, std::vector<cv::Point2f> corners);
 
-	std::vector<cv::Point2f> renderGridCorners();
+	Matches renderGridCorners();
 
 	void renderSourceImage();
 

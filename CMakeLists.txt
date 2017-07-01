@@ -40,11 +40,15 @@ catkin_package(
    DEPENDS opencv
 )
 
+add_library(dipaTypes include/dipa/DipaTypes.h)
+set_target_properties(dipaTypes PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(dipaTypes ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+
 add_library(dipaGridRenderer include/dipa/GridRenderer.cpp)
-target_link_libraries(dipaGridRenderer ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIBRARY})
+target_link_libraries(dipaGridRenderer ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIBRARY} dipaTypes)
 
 add_library(dipa include/dipa/Dipa.cpp)
-target_link_libraries(dipa ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} dipaGridRenderer)
+target_link_libraries(dipa ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} dipaGridRenderer dipaTypes)
 
 add_executable(dipa_test test/unit_test.cpp)
 target_link_libraries(dipa_test ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIBRARY} dipaGridRenderer dipa)

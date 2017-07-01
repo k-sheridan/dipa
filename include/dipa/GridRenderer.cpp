@@ -311,20 +311,23 @@ cv::Mat GridRenderer::drawCorners(cv::Mat in, std::vector<cv::Point2f> corners)
 	return in;
 }
 
-std::vector<cv::Point2f> GridRenderer::renderGridCorners()
+Matches GridRenderer::renderGridCorners()
 {
-	std::vector<cv::Point2f> corners;
+	Matches matches;
 	for(auto e : grid_corners)
 	{
 		bool good = false;
 		cv::Point2f px = this->projectPoint(e, good);
 		if(good)
 		{
-			corners.push_back(px);
+			Match m;
+			m.obj = cv::Point3d(e.x(), e.y(), e.z());
+			m.obj_px = px;
+			matches.matches.push_back(m);
 		}
 	}
 
-	return corners;
+	return matches;
 }
 
 cv::Mat GridRenderer::renderGridByProjection()
