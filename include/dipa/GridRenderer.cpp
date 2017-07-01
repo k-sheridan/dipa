@@ -255,9 +255,52 @@ void GridRenderer::renderSourceImage()
 
 }
 
-cv::Mat GridRenderer::renderGridCorners()
+cv::Point2f GridRenderer::projectPoint(tf::Vector3 in, bool& good)
 {
+	tf::Vector3 proj = this->c2w * in;
 
+	if(proj.z() <= 0)
+	{
+		good = false;
+		return cv::Point2f(-1, -1);
+	}
+
+	cv::Point2f px = cv::Point2f(this->K(0) * (proj.x()/proj.z()) + this->K(2), this->K(4) * (proj.y()/proj.z()) + this->K(5));
+
+	if(px.x < 0 || px.y < 0 || px.x > this->size.width || px.y > this->size.height)
+	{
+		good = false;
+		return cv::Point2f(-1, -1);
+	}
+
+	good = true;
+	return px;
+}
+
+cv::Mat drawCorners(cv::Mat in, std::vector<cv::Point2f> corners)
+{
+	for(auto e : corners)
+	{
+		cv::drawMarker(in, e, cv::Scalar(255, 255, 0));
+	}
+
+	return in;
+}
+
+std::vector<cv::Point2f> GridRenderer::renderGridCorners()
+{
+	std::vector<cv::Point2f> corners;
+	for(auto e : grid_corners)
+	{
+		bool good = false;
+		cv::Point2f px = this->projectPoint(e, good);
+		if(good)
+		{
+			corners.push_back(px);
+		}
+	}
+
+	return corners;
 }
 
 cv::Mat GridRenderer::renderGridByProjection()

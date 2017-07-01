@@ -119,7 +119,11 @@ public:
 	tf::Vector3 project2XYPlane(cv::Mat_<float> dir, bool& behind);
 	cv::Mat renderGridByProjection();
 
-	cv::Mat renderGridCorners();
+	cv::Point2f projectPoint(tf::Vector3 in, bool& good);
+
+	cv::Mat drawCorners(cv::Mat in, std::vector<cv::Point2f> corners);
+
+	std::vector<cv::Point2f> renderGridCorners();
 
 	void renderSourceImage();
 
