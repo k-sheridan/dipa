@@ -51,10 +51,10 @@ cv::Mat_<float> GridRenderer::tf2cv(tf::Transform tf)
 void GridRenderer::generateGrid()
 {
 
-	double grid_size = 9;
-	double ilt=0.02;
-	double olt=0.04;
-	double grid_spacing = 0.3;
+	double grid_size = this->grid_size;
+	double ilt=inner_line_thickness;
+	double olt=outer_line_thickness;
+	double grid_spacing = this->grid_spacing;
 	double min = -(grid_size * grid_spacing / 2);
 	double max = (grid_size * grid_spacing / 2);
 
@@ -142,21 +142,41 @@ void GridRenderer::generateGrid()
 				if(x_line == 0 || x_line == grid_size)
 				{
 
+
 				}
 				else
 				{
+					if(x_line == 0) // two up
+					{
 
+					}
+					else // two down
+					{
+
+					}
 				}
 			}
 			else
 			{
 				if(x_line == 0 || x_line == grid_size)
 				{
+					if(x_line == 0) // two to the right
+					{
+
+					}
+					else // two to the left
+					{
+
+					}
 
 				}
 				else
 				{
-
+					//this is the case that we are in the center
+					grid_corners.push_back(tf::Vector3(x + ilt / 2.0, y + ilt / 2.0, 0));
+					grid_corners.push_back(tf::Vector3(x - ilt / 2.0, y + ilt / 2.0, 0));
+					grid_corners.push_back(tf::Vector3(x - ilt / 2.0, y - ilt / 2.0, 0));
+					grid_corners.push_back(tf::Vector3(x + ilt / 2.0, y - ilt / 2.0, 0));
 				}
 			}
 
@@ -232,6 +252,11 @@ void GridRenderer::renderSourceImage()
 
 	sourceRender = this->renderGridByProjection();
 
+
+}
+
+cv::Mat GridRenderer::renderGridCorners()
+{
 
 }
 

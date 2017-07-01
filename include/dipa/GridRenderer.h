@@ -119,6 +119,8 @@ public:
 	tf::Vector3 project2XYPlane(cv::Mat_<float> dir, bool& behind);
 	cv::Mat renderGridByProjection();
 
+	cv::Mat renderGridCorners();
+
 	void renderSourceImage();
 
 	cv::Mat computeHomography();
