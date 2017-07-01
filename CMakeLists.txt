@@ -43,8 +43,11 @@ catkin_package(
 add_library(dipaGridRenderer include/dipa/GridRenderer.cpp)
 target_link_libraries(dipaGridRenderer ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIBRARY})
 
+add_library(dipa include/dipa/Dipa.cpp)
+target_link_libraries(dipa ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} dipaGridRenderer)
+
 add_executable(dipa_test test/unit_test.cpp)
-target_link_libraries(dipa_test ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIBRARY} dipaGridRenderer)
+target_link_libraries(dipa_test ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIBRARY} dipaGridRenderer dipa)
 
 #add_executable(dipa_gl_test test/gl_test.cpp)
 #target_link_libraries(dipa_test ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIBRARY} )
