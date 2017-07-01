@@ -51,6 +51,9 @@ public:
 
 	tf::TransformListener* tf_listener;
 
+	cv::Size image_size;
+	cv::Mat_<float> image_K;
+
 	std::vector<cv::Point2f> detected_corners;
 
 	cv::flann::KDTreeIndexParams indexParams;

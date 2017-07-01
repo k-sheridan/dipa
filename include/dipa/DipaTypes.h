@@ -28,12 +28,24 @@ struct Match{
 	cv::Point3d obj;
 	cv::Point2d obj_px;
 	cv::Point2d measurement;
+	double pixelNorm;
+
+	Match(){
+		pixelNorm = -1;
+	}
 
 	double getPixelNorm()
 	{
-		double dx = obj_px.x - measurement.x;
-		double dy = obj_px.y - measurement.y;
-		return sqrt(dx*dx+dy*dy);
+		if(pixelNorm < 0)
+		{
+			double dx = obj_px.x - measurement.x;
+			double dy = obj_px.y - measurement.y;
+			return sqrt(dx*dx+dy*dy);
+		}
+		else
+		{
+			return pixelNorm;
+		}
 	}
 };
 

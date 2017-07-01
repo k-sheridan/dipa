@@ -36,4 +36,22 @@ vector<int> indices;
 vector<float> dists;
 kdtree.radiusSearch(query, indices, dists, range, numOfPoints);
 	 */
+
+	double maxRadius = sqrt(this->image_size.width * this->image_size.width + this->image_size.height * this->image_size.height);
+
+	for(auto& e : model.matches)
+	{
+		std::vector<float> query;
+		query.push_back(e.obj_px.x);
+		query.push_back(e.obj_px.y);
+
+		std::vector<int> indexes;
+		std::vector<float> dists;
+
+		kdtree.radiusSearch(query, indexes, dists, maxRadius, 1);
+
+		e.measurement = cv::Point2d(detected_corners.at(indexes.front()).x, detected_corners.at(indexes.front()).y);
+		e.pixelNorm = dists.front();
+		ROS_DEBUG_STREAM("norm: " << e.pixelNorm);
+	}
 }
