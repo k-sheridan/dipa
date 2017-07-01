@@ -110,6 +110,27 @@ int main(int argc, char **argv)
 	ros::Subscriber imgsub = nh.subscribe<sensor_msgs::Image>("m7/camera/image_rect", 2, imgcb);
 
 
+	tf::Transform w2c1;
+	w2c1.setRotation(tf::Quaternion(1/sqrt(3), 1/sqrt(3), 0, 1/sqrt(3)));
+	//w2c1.setRotation(tf::Quaternion(1/sqrt(2), 1/sqrt(2), 0, 0));
+	w2c1.setOrigin(tf::Vector3(0, 0, 1));
+
+	cv::Mat_<float> K = (cv::Mat_<float>(3, 3) << 300, 0, 300, 0, 300, 400, 0, 0, 1);
+
+	GridRenderer gr;
+
+	gr.setW2C(w2c1);
+	gr.setSize(cv::Size(600, 800));
+	gr.setIntrinsic(K);
+
+
+
+
+	while(ros::ok())
+	{
+		cv::imshow("render", gr.sourceRender);
+		cv::waitKey(30);
+	}
 
 	ros::spin();
 

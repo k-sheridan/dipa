@@ -41,9 +41,17 @@
 
 #define _BACKGROUND cv::Vec3b(0, 0, 0)
 
+#define METRIC_RESOLUTION 0.01
+
+#define GRID_SIZE 10
+#define GRID_SPACING 0.32
+#define INNER_LINE_THICKNESS 0.04
+#define OUTER_LINE_THICKNESS 0.08
+#define BOUNDARY_PADDING 1
+
 
 class GridRenderer {
-public:
+private:
 
 	struct Quad{
 		cv::Vec3b color;
@@ -54,11 +62,13 @@ public:
 		 */
 		bool pointInQuad(tf::Vector3 pt)
 		{
+			//ROS_ASSERT(vertices.size() == 4);
 			return cv::pointPolygonTest(vertices, cv::Point2f(pt.x(), pt.y()), false) >= 0;
 		}
 	};
 
 	std::deque<Quad> grid;
+	std::vector<tf::Vector3> grid_corners;
 
 	int grid_size;
 	double grid_spacing;
@@ -72,6 +82,12 @@ public:
 	cv::Size size;
 	tf::Transform w2c;
 	tf::Transform c2w;
+
+	tf::Transform source_trans;
+	cv::Mat_<float> source_K;
+
+public:
+	cv::Mat sourceRender;
 
 	GridRenderer();
 	virtual ~GridRenderer();
@@ -103,6 +119,9 @@ public:
 	tf::Vector3 project2XYPlane(cv::Mat_<float> dir, bool& behind);
 	cv::Mat renderGridByProjection();
 
+	void renderSourceImage();
+
+	cv::Mat computeHomography();
 
 };
 

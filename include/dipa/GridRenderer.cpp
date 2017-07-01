@@ -12,9 +12,15 @@ GridRenderer::GridRenderer() {
 	GREEN = _GREEN;
 	RED = _RED;
 
-	boundary_padding = 1;
+	boundary_padding = BOUNDARY_PADDING;
+	inner_line_thickness = INNER_LINE_THICKNESS;
+	outer_line_thickness = OUTER_LINE_THICKNESS;
+	grid_size = GRID_SIZE;
+	grid_spacing = GRID_SPACING;
+
 
 	generateGrid();
+	//renderSourceImage();
 }
 
 GridRenderer::~GridRenderer() {
@@ -58,6 +64,9 @@ void GridRenderer::generateGrid()
 	floor.vertices.push_back(cv::Point2f( min - boundary_padding, max + boundary_padding));
 	floor.vertices.push_back(cv::Point2f( min - boundary_padding, min - boundary_padding));
 	floor.vertices.push_back(cv::Point2f( max + boundary_padding, min - boundary_padding));
+	grid.push_front(floor);
+
+	ROS_DEBUG_STREAM("front size: " << grid.front().vertices.size());
 
 	int line = 0;
 	for(double x = min; x < max + grid_spacing; x += grid_spacing)
@@ -82,6 +91,8 @@ void GridRenderer::generateGrid()
 			q.vertices.push_back(cv::Point2f( x - olt, min));
 		}
 
+		ROS_DEBUG_STREAM("front size: " << grid.front().vertices.size());
+
 		grid.push_front(q);
 
 		line++;
@@ -102,26 +113,90 @@ void GridRenderer::generateGrid()
 			q.vertices.push_back(cv::Point2f(min, y + ilt));
 			q.vertices.push_back(cv::Point2f(min, y - ilt));
 		}
+		else
+		{
+			q.vertices.push_back(cv::Point2f(max, y - olt));
+			q.vertices.push_back(cv::Point2f(max, y + olt));
+			q.vertices.push_back(cv::Point2f(min, y + olt));
+			q.vertices.push_back(cv::Point2f(min, y - olt));
+		}
 
 		grid.push_front(q);
+
+		ROS_DEBUG_STREAM("front size: " << grid.front().vertices.size());
 
 		line++;
 	}
 
 
+	//generate the grid corners
+
+	int x_line = 0;
+	for(double x = min; x < max + grid_spacing; x += grid_spacing)
+	{
+		int y_line = 0;
+		for(double y = min; y < max + grid_spacing; y += grid_spacing)
+		{
+			if(y_line == 0 || y_line == grid_size)
+			{
+				if(x_line == 0 || x_line == grid_size)
+				{
+
+				}
+				else
+				{
+
+				}
+			}
+			else
+			{
+				if(x_line == 0 || x_line == grid_size)
+				{
+
+				}
+				else
+				{
+
+				}
+			}
+
+
+			y_line++;
+		}
+		x_line++;
+	}
+
+}
+
+cv::Mat GridRenderer::computeHomography()
+{
+	cv::Mat_<float> R = (cv::Mat_<float>(3, 3) << w2c.getBasis().getRow(0).x(), w2c.getBasis().getRow(0).y(), w2c.getBasis().getRow(0).z(),
+			w2c.getBasis().getRow(1).x(), w2c.getBasis().getRow(1).y(), w2c.getBasis().getRow(1).z(),
+			w2c.getBasis().getRow(2).x(), w2c.getBasis().getRow(2).y(), w2c.getBasis().getRow(2).z());
+
+	cv::Mat_<float> t = (cv::Mat_<float>(3, 1) << w2c.getOrigin().x(), w2c.getOrigin().y(), w2c.getOrigin().z());
+	cv::Mat_<float> n = (cv::Mat_<float>(1, 3) << 0, 0, 1);
+
+	cv::Mat H = R - (t * n) * (1 / fabs(w2c.getOrigin().z()));
+
+	return H;
 }
 
 tf::Vector3 GridRenderer::project2XYPlane(cv::Mat_<float> dir, bool& behind)
 {
 	tf::Vector3 dir_world = (w2c * tf::Vector3(dir(0), dir(1), dir(2))) - w2c.getOrigin();
 
+	//ROS_DEBUG_STREAM("dir cam " << dir);
+	//ROS_DEBUG_STREAM("z dir world: " << dir_world.z());
 	// z = z0 + dz*dt;
 	// 0 = z0 + dz*dt;
 	// -z0/dz = dt;
 
 	double dt = (-w2c.getOrigin().z() / dir_world.z());
 
-	tf::Vector3 proj = w2c.getOrigin() + dir_world * (-w2c.getOrigin().z() / dir_world.z()) * dt;
+	//ROS_DEBUG_STREAM("dt: " << dt);
+
+	tf::Vector3 proj = w2c.getOrigin() + dir_world * dt;
 
 	if(dt <= 0)
 	{
@@ -131,10 +206,33 @@ tf::Vector3 GridRenderer::project2XYPlane(cv::Mat_<float> dir, bool& behind)
 	{
 		behind = false;
 	}
-
-	ROS_ASSERT(proj.z() == 0);
+	//ROS_DEBUG_STREAM("z height: " << proj.z());
+	//ROS_ASSERT(proj.z() == 0);
 
 	return proj;
+}
+
+void GridRenderer::renderSourceImage()
+{
+	double width = (grid_size * grid_spacing + 2*boundary_padding) / METRIC_RESOLUTION;
+	double height = width;
+
+	ROS_DEBUG_STREAM("width: " << width);
+
+	cv::Mat_<float> tempK = (cv::Mat_<float>(3, 3) << 1/METRIC_RESOLUTION, 0, width/2,
+			0, 1/METRIC_RESOLUTION, height/2,
+			0, 0, 1);
+	this->setIntrinsic(tempK);
+	this->setSize(cv::Size(width, height));
+
+	source_trans.setRotation(tf::Quaternion(1/sqrt(2), 0, 0, 0));
+	source_trans.setOrigin(tf::Vector3(0, 0, 1));
+
+	this->setW2C(source_trans);
+
+	sourceRender = this->renderGridByProjection();
+
+
 }
 
 cv::Mat GridRenderer::renderGridByProjection()
