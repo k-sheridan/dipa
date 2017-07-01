@@ -51,6 +51,24 @@ struct Matches{
 
 		return in;
 	}
+
+	std::vector<cv::Point2d> getMeasurementsInOrder(){
+		std::vector<cv::Point2d> z;
+		for(auto e : matches)
+		{
+			z.push_back(e.measurement);
+		}
+		return z;
+	}
+
+	std::vector<cv::Point3d> getObjectInOrder(){
+		std::vector<cv::Point3d> z;
+		for(auto e : matches)
+		{
+			z.push_back(e.obj);
+		}
+		return z;
+	}
 };
 
 

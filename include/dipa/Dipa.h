@@ -49,8 +49,23 @@
 class Dipa {
 public:
 
+	tf::TransformListener* tf_listener;
+
+	std::vector<cv::Point2f> detected_corners;
+
+	cv::flann::KDTreeIndexParams indexParams;
+	cv::flann::Index kdtree;
+
 	Dipa();
 	virtual ~Dipa();
+
+	void run(){
+		ros::spin();
+	}
+
+	void setupKDTree();
+
+	void findClosestPoints(Matches& model);
 };
 
 #endif /* DIPA_INCLUDE_DIPA_DIPA_H_ */
