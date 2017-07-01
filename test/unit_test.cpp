@@ -128,9 +128,9 @@ int main(int argc, char **argv)
 	Matches matches = gr.renderGridCorners();
 
 	tf::Transform motion;
-	motion.setRotation(tf::Quaternion(0, 0.1, 0, 1));
+	motion.setRotation(tf::Quaternion(0, 0, 0, 1));
 	//w2c1.setRotation(tf::Quaternion(1/sqrt(2), 1/sqrt(2), 0, 0));
-	motion.setOrigin(tf::Vector3(0, 0, 0.1));
+	motion.setOrigin(tf::Vector3(0, 0, 1));
 
 	gr.setW2C(w2c1*motion);
 
@@ -142,7 +142,7 @@ int main(int argc, char **argv)
 	//set the measurements
 	dipa.detected_corners = gr.renderGridCorners().getObjectPixelsInOrder();
 
-	dipa.setupKDTree(); // prepare the kd tree
+	//dipa.setupKDTree(); // prepare the kd tree
 
 	dipa.findClosestPoints(matches);
 

@@ -14,16 +14,28 @@ Dipa::Dipa() {
 }
 
 Dipa::~Dipa() {
-	// TODO Auto-generated destructor stub
+	/*if(kdtree != NULL)
+	{
+		delete kdtree;
+	}*/
+
+	if(tf_listener != NULL)
+	{
+		delete tf_listener;
+	}
 }
 
-void Dipa::setupKDTree()
+/*void Dipa::setupKDTree()
 {
+	if(kdtree != NULL)
+	{
+		delete kdtree;
+		kdtree = 0;
+	}
 	ROS_DEBUG("setting up kdtree");
-	indexParams = cv::flann::KDTreeIndexParams();
-	kdtree = cv::flann::Index(cv::Mat(detected_corners).reshape(1), indexParams);
+	kdtree = new cv::flann::Index(cv::Mat(detected_corners).reshape(1), cv::flann::KDTreeIndexParams());
 	ROS_DEBUG("tree setup");
-}
+}*/
 
 void Dipa::findClosestPoints(Matches& model)
 {
@@ -39,6 +51,8 @@ vector<float> dists;
 kdtree.radiusSearch(query, indices, dists, range, numOfPoints);
 	 */
 
+	cv::flann::Index tree(cv::Mat(detected_corners).reshape(1), cv::flann::KDTreeIndexParams());
+
 	ROS_DEBUG("finding nearest neighbors");
 	double maxRadius = sqrt(this->image_size.width * this->image_size.width + this->image_size.height * this->image_size.height);
 
@@ -51,10 +65,12 @@ kdtree.radiusSearch(query, indices, dists, range, numOfPoints);
 		std::vector<int> indexes;
 		std::vector<float> dists;
 
-		kdtree.radiusSearch(query, indexes, dists, maxRadius, 1);
+		tree.knnSearch(query, indexes, dists, 1);
 
 		e.measurement = cv::Point2d(detected_corners.at(indexes.front()).x, detected_corners.at(indexes.front()).y);
 		e.pixelNorm = dists.front();
-		ROS_DEBUG_STREAM("norm: " << e.pixelNorm);
+		//ROS_DEBUG_STREAM("norm: " << e.pixelNorm);
 	}
+
+	ROS_DEBUG("neighbors found");
 }

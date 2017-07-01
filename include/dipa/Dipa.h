@@ -56,8 +56,7 @@ public:
 
 	std::vector<cv::Point2f> detected_corners;
 
-	cv::flann::KDTreeIndexParams indexParams;
-	cv::flann::Index kdtree;
+	//cv::flann::Index* kdtree;
 
 	Dipa();
 	virtual ~Dipa();
