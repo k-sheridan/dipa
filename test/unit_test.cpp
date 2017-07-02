@@ -104,17 +104,14 @@ int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "dipa_test");
 
-	ros::NodeHandle nh;
-
-	image_transport::ImageTransport it(nh);
-
-	ros::Subscriber imgsub = nh.subscribe<sensor_msgs::Image>("m7/camera/image_rect", 2, imgcb);
-
 
 	tf::Transform w2c1;
 	w2c1.setRotation(tf::Quaternion(0, 0, 0, 1));
 	//w2c1.setRotation(tf::Quaternion(1/sqrt(2), 1/sqrt(2), 0, 0));
 	w2c1.setOrigin(tf::Vector3(0, 0, 0.5));
+
+	//give it a world to base guess
+	Dipa dipa(w2c1);
 
 	/*cv::Mat_<float> K = (cv::Mat_<float>(3, 3) << 300, 0, 300, 0, 300, 300, 0, 0, 1);
 

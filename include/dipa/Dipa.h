@@ -62,7 +62,7 @@
 class Dipa {
 public:
 
-	tf::TransformListener* tf_listener;
+	tf::TransformListener tf_listener;
 
 	GridRenderer renderer;
 
