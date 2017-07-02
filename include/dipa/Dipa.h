@@ -44,6 +44,8 @@
 
 #define SUPER_DEBUG true
 
+#define MAX_ITERATIONS 10
+
 #include <dipa/GridRenderer.h>
 
 #include <dipa/DipaTypes.h>
@@ -52,6 +54,8 @@ class Dipa {
 public:
 
 	tf::TransformListener* tf_listener;
+
+	GridRenderer renderer;
 
 	cv::Size image_size;
 	cv::Mat_<float> image_K;

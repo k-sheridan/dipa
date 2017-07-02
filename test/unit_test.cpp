@@ -148,6 +148,8 @@ int main(int argc, char **argv)
 
 	dipa.findClosestPoints(matches);
 
+	dipa.image_K = (K);
+	dipa.image_size = (cv::Size(600, 600));
 
 
 			while(ros::ok())

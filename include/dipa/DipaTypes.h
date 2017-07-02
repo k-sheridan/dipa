@@ -34,7 +34,7 @@ struct Match{
 		pixelNorm = -1;
 	}
 
-	double getPixelNorm()
+	double computePixelNorm()
 	{
 
 		double dx = obj_px.x - measurement.x;
