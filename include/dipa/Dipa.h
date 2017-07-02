@@ -42,9 +42,11 @@
 #include <sstream>
 #include <cv_bridge/cv_bridge.h>
 
-#define SUPER_DEBUG true
+#define SUPER_DEBUG false
 
-#define MAX_ITERATIONS 10
+#define MAX_ITERATIONS 20
+
+#define CONVERGENCE_DELTA 0.1
 
 #include <dipa/GridRenderer.h>
 
@@ -79,7 +81,7 @@ public:
 
 	tf::Transform rvecAndtvec2tf(cv::Mat tvec, cv::Mat rvec);
 
-	void runICP(tf::Transform w2c_guess);
+	tf::Transform runICP(tf::Transform w2c_guess);
 };
 
 #endif /* DIPA_INCLUDE_DIPA_DIPA_H_ */

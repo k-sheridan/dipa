@@ -53,7 +53,7 @@ kdtree.radiusSearch(query, indices, dists, range, numOfPoints);
 
 	cv::flann::Index tree(cv::Mat(detected_corners).reshape(1), cv::flann::KDTreeIndexParams());
 
-	ROS_DEBUG("finding nearest neighbors");
+	//ROS_DEBUG("finding nearest neighbors");
 	double maxRadius = sqrt(this->image_size.width * this->image_size.width + this->image_size.height * this->image_size.height);
 
 	for(auto& e : model.matches)
@@ -88,20 +88,25 @@ kdtree.radiusSearch(query, indices, dists, range, numOfPoints);
 		//ROS_DEBUG_STREAM("norm: " << e.getPixelNorm());
 	}
 
-	ROS_DEBUG("neighbors found");
+	//ROS_DEBUG("neighbors found");
 }
 
 void Dipa::tf2rvecAndtvec(tf::Transform tf, cv::Mat& tvec, cv::Mat& rvec){
-	cv::Mat_<float> R = (cv::Mat_<float>(3, 3) << tf.getBasis().getRow(0).x(), tf.getBasis().getRow(0).y(), tf.getBasis().getRow(0).z(),
+	cv::Mat_<double> R = (cv::Mat_<double>(3, 3) << tf.getBasis().getRow(0).x(), tf.getBasis().getRow(0).y(), tf.getBasis().getRow(0).z(),
 			tf.getBasis().getRow(1).x(), tf.getBasis().getRow(1).y(), tf.getBasis().getRow(1).z(),
 			tf.getBasis().getRow(2).x(), tf.getBasis().getRow(2).y(), tf.getBasis().getRow(2).z());
 
+	//ROS_DEBUG("setting up tvec and rvec");
+
 	cv::Rodrigues(R, rvec);
 
-	tvec = (cv::Mat_<float>(3, 1) << tf.getOrigin().x(), tf.getOrigin().y(), tf.getOrigin().z());
+	tvec = (cv::Mat_<double>(3, 1) << tf.getOrigin().x(), tf.getOrigin().y(), tf.getOrigin().z());
+
+	//ROS_DEBUG_STREAM("tvec: " << tvec << "\nrvec: " << rvec);
 }
 
 tf::Transform Dipa::rvecAndtvec2tf(cv::Mat tvec, cv::Mat rvec){
+	//ROS_DEBUG("rvectvec to tf");
 	cv::Mat_<double> rot;
 	cv::Rodrigues(rvec, rot);
 	/*ROS_DEBUG_STREAM("rot: " << rot);
@@ -119,6 +124,8 @@ tf::Transform Dipa::rvecAndtvec2tf(cv::Mat tvec, cv::Mat rvec){
 		ROS_DEBUG_STREAM("tf rvec " << x <<", "<<y<<", "<<z);*/
 	//ROS_DEBUG_STREAM(trans.getOrigin().x() << ", " << trans.getOrigin().y() << ", " << trans.getOrigin().z());
 
+	//ROS_DEBUG("finished");
+
 	return trans;
 }
 
@@ -129,7 +136,7 @@ tf::Transform Dipa::rvecAndtvec2tf(cv::Mat tvec, cv::Mat rvec){
  *
  * returns the optimized pose which fits the corner model the best
  */
-void Dipa::runICP(tf::Transform w2c_guess)
+tf::Transform Dipa::runICP(tf::Transform w2c_guess)
 {
 	//set up the renderer with the current K and size
 	this->renderer.setSize(this->image_size);
@@ -139,28 +146,52 @@ void Dipa::runICP(tf::Transform w2c_guess)
 
 	this->tf2rvecAndtvec(w2c_guess.inverse(), tvec, rvec); // set the rvec and tvec to the current best guesses inverse (C2W);
 
+	ROS_DEBUG("begining optim");
+
+	//initial setup and sse calculation
+	this->renderer.setC2W(this->rvecAndtvec2tf(tvec, rvec)); // the the renderer's current pose
+	Matches matches = this->renderer.renderGridCorners(); // render the corners into this frame given our current guess
+
+	this->findClosestPoints(matches); // find the closest points between the model and the observation corners
+	double last_sse = matches.sumErrors();
+	double current_sse = last_sse;
+
 	for(int i = 0; i < MAX_ITERATIONS; i++)
 	{
-		this->renderer.setC2W(this->rvecAndtvec2tf(tvec, rvec)); // the the renderer's current pose
-		Matches matches = this->renderer.renderGridCorners(); // render the corners into this frame given our current guess
-
-		this->findClosestPoints(matches); // find the closest points between the model and the observation corners
-
 		// now we minimize the photometric error between our known model and our observations using the correspondences we have just guessed
 		cv::solvePnP(matches.getObjectInOrder(), matches.getMeasurementsInOrder(), this->image_K, cv::noArray(), rvec, tvec, true, cv::SOLVEPNP_ITERATIVE); // use the current guess to help convergence
 
+		// recalculate correspondences and sse
+		this->renderer.setC2W(this->rvecAndtvec2tf(tvec, rvec)); // the the renderer's current pose
+		matches = this->renderer.renderGridCorners(); // render the corners into this frame given our current guess
 
-		//TODO determine if converged
+		this->findClosestPoints(matches); // find the closest points between the model and the observation corners
+		current_sse = matches.sumErrors(); // compute current sse
+
+		ROS_DEBUG_STREAM("current error: " << current_sse);
+
+		if(fabs(current_sse - last_sse) < CONVERGENCE_DELTA){
+			ROS_DEBUG("PNP-ICP Converged");
+			break;
+		}
+		else
+		{
+			last_sse = current_sse; // set the new last sse
+		}
 
 #if SUPER_DEBUG
 		cv::Mat blank = cv::Mat::zeros(this->image_size, CV_8UC3);
 		blank = matches.draw(blank, this->detected_corners);
 		cv::imshow("render", blank);
+		cv::waitKey(30);
 		ros::Duration dur(1);
 		dur.sleep();
 #endif
 
 	}
 
+	ROS_DEBUG("end optim");
+
+	return this->rvecAndtvec2tf(tvec, rvec).inverse(); // return the w2c guess
 
 }

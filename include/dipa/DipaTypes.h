@@ -106,6 +106,16 @@ struct Matches{
 		}
 		return z;
 	}
+
+	double sumErrors()
+	{
+		double error = 0;
+		for(auto e : matches){
+			error += e.pixelNorm;
+		}
+
+		return error;
+	}
 };
 
 
