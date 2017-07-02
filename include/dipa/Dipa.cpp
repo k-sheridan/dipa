@@ -14,6 +14,9 @@ Dipa::Dipa(tf::Transform initial_world_to_base_transform) {
 	//TODO make a camera sub when I have a properly recorded dataset
 	image_transport::Subscriber bottom_cam_sub = it.subscribe(BOTTOM_CAMERA_TOPIC, 2, &Dipa::bottomCamCb, this);
 
+
+	ros::spin(); // go into the main loop;
+
 }
 
 Dipa::~Dipa() {
