@@ -41,22 +41,22 @@ void Dipa::detectFeatures(cv::Mat raw)
 	//cv::Mat white_only;
 	//cv::threshold(scaled_img, white_only, WHITE_THRESH, 255, CV_8UC1);
 
-	cv::Mat harris = cv::Mat(scaled_img.size(), CV_32FC1);
+	/*cv::Mat harris = cv::Mat(scaled_img.size(), CV_32FC1);
 	cv::cornerHarris(scaled_img, harris, HARRIS_SIZE, HARRIS_APERTURE, HARRIS_K, cv::BORDER_DEFAULT);
 
 	cv::Mat harris_norm, harris_norm_scaled;
 
 	cv::normalize( harris, harris_norm, 0, 255, cv::NORM_MINMAX, CV_32FC1, cv::Mat() );
-	cv::convertScaleAbs( harris_norm, harris_norm_scaled );
+	cv::convertScaleAbs( harris_norm, harris_norm_scaled );*/
 
 	std::vector<cv::KeyPoint> fast_kp;
 	cv::FAST(scaled_img, fast_kp, FAST_THRESHOLD, true, cv::FastFeatureDetector::TYPE_9_16);
 
 	ROS_DEBUG("detect end");
 
-	cv::drawKeypoints(harris_norm_scaled, fast_kp, harris_norm_scaled);
+	cv::drawKeypoints(scaled_img, fast_kp, scaled_img);
 
-	cv::imshow("kp", harris_norm_scaled);
+	cv::imshow("kp", scaled_img);
 	cv::waitKey(30);
 }
 
