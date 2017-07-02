@@ -49,7 +49,12 @@ void Dipa::detectFeatures(cv::Mat raw)
 	cv::normalize( harris, harris_norm, 0, 255, cv::NORM_MINMAX, CV_32FC1, cv::Mat() );
 	cv::convertScaleAbs( harris_norm, harris_norm_scaled );
 
+	std::vector<cv::KeyPoint> fast_kp;
+	cv::FAST(scaled_img, fast_kp, FAST_THRESHOLD, true, cv::FastFeatureDetector::TYPE_9_16);
+
 	ROS_DEBUG("detect end");
+
+	cv::drawKeypoints(harris_norm_scaled, fast_kp, harris_norm_scaled);
 
 	cv::imshow("kp", harris_norm_scaled);
 	cv::waitKey(30);

@@ -53,6 +53,8 @@
 //lower this if you have easy corners to detect
 #define INVERSE_IMAGE_SCALE 4
 
+#define FAST_THRESHOLD 50
+
 #define HARRIS_SIZE 2
 #define HARRIS_APERTURE 3
 #define HARRIS_K 0.04
