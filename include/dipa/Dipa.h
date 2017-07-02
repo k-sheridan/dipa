@@ -82,7 +82,10 @@ public:
 		ros::spin();
 	}
 
-	void setupKDTree();
+	void bottomCamCb(const sensor_msgs::ImageConstPtr& img);
+	//void bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs::CameraInfoConstPtr cam);
+
+	//void setupKDTree();
 
 	void findClosestPoints(Matches& model);
 

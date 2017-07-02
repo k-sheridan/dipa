@@ -8,8 +8,12 @@
 #include <dipa/Dipa.h>
 
 Dipa::Dipa(tf::Transform initial_world_to_base_transform) {
-	//ros::NodeHandle nh;
+	ros::NodeHandle nh;
 	this->tf_listener = new tf::TransformListener(); // set up the tf listener
+
+	image_transport::ImageTransport it(nh);
+	//TODO make a camera sub when I have a properly recorded dataset
+	image_transport::Subscriber bottom_cam_sub = it.subscribe(BOTTOM_CAMERA_TOPIC, 2, &Dipa::bottomCamCb, this);
 
 }
 
@@ -23,6 +27,11 @@ Dipa::~Dipa() {
 	{
 		delete tf_listener;
 	}
+}
+//void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs::CameraInfoConstPtr cam)
+void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img)
+{
+	ROS_DEBUG("got image");
 }
 
 /*void Dipa::setupKDTree()
