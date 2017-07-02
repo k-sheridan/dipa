@@ -42,6 +42,8 @@
 #include <sstream>
 #include <cv_bridge/cv_bridge.h>
 
+#define SUPER_DEBUG true
+
 #include <dipa/GridRenderer.h>
 
 #include <dipa/DipaTypes.h>
@@ -68,6 +70,12 @@ public:
 	void setupKDTree();
 
 	void findClosestPoints(Matches& model);
+
+	void tf2rvecAndtvec(tf::Transform tf, cv::Mat& tvec, cv::Mat& rvec);
+
+	tf::Transform rvecAndtvec2tf(cv::Mat tvec, cv::Mat rvec);
+
+	void runICP(tf::Transform w2c_guess);
 };
 
 #endif /* DIPA_INCLUDE_DIPA_DIPA_H_ */

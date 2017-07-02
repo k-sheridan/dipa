@@ -60,6 +60,24 @@ struct Matches{
 		return in;
 	}
 
+	cv::Mat draw(cv::Mat in, std::vector<cv::Point2f> detect)
+	{
+		for(auto e : detect)
+		{
+			cv::drawMarker(in, e, cv::Scalar(255, 0, 0), cv::MARKER_DIAMOND, 4);
+		}
+
+		for(auto e : matches)
+		{
+
+			cv::drawMarker(in, e.obj_px, cv::Scalar(255, 255, 0), cv::MARKER_SQUARE, 4);
+			//cv::drawMarker(in, e.measurement, cv::Scalar(0, 255, 0), cv::MARKER_STAR, 4);
+			cv::line(in, e.obj_px, e.measurement, cv::Scalar(255, 255, 255));
+		}
+
+		return in;
+	}
+
 	std::vector<cv::Point2d> getMeasurementsInOrder(){
 		std::vector<cv::Point2d> z;
 		for(auto e : matches)

@@ -89,3 +89,15 @@ kdtree.radiusSearch(query, indices, dists, range, numOfPoints);
 
 	ROS_DEBUG("neighbors found");
 }
+
+/*
+ * runs iterative closest point algorithm modified to work with 2d to 3d correspondences.
+ * takes a tf transform representing the transform from the world coordinate frame to the camera coordinate frame
+ * this transform should be the current best guess of the transform
+ *
+ * returns the optimized pose which fits the corner model the best
+ */
+void Dipa::runICP(tf::Transform w2c_guess)
+{
+
+}
