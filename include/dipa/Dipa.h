@@ -48,6 +48,13 @@
 
 #define CONVERGENCE_DELTA 0.1
 
+#define BOTTOM_CAMERA_TOPIC "/m7/camera/image_rect"
+#define BOTTOM_CAMERA_FRAME "bottomCamera"
+
+#define BASE_FRAME "base_link"
+
+#define WORLD_FRAME "world"
+
 #include <dipa/GridRenderer.h>
 
 #include <dipa/DipaTypes.h>
@@ -64,9 +71,11 @@ public:
 
 	std::vector<cv::Point2f> detected_corners;
 
+	DipaState state;
+
 	//cv::flann::Index* kdtree;
 
-	Dipa();
+	Dipa(tf::Transform initial_world_to_base_transform);
 	virtual ~Dipa();
 
 	void run(){

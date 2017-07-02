@@ -118,5 +118,24 @@ struct Matches{
 	}
 };
 
+struct DipaState{
+
+private:
+	tf::Vector3 omega; // rad/s
+	tf::Vector3 vel; // m/s
+
+	bool twist_set;
+public:
+
+	tf::Transform last_best_w2b;
+	ros::Time last_best_t;
+
+	DipaState()
+	{
+		twist_set = false;
+	}
+
+};
+
 
 #endif /* DIPA_INCLUDE_DIPA_DIPATYPES_H_ */

@@ -7,9 +7,9 @@
 
 #include <dipa/Dipa.h>
 
-Dipa::Dipa() {
+Dipa::Dipa(tf::Transform initial_world_to_base_transform) {
 	//ros::NodeHandle nh;
-
+	this->tf_listener = new tf::TransformListener(); // set up the tf listener
 
 }
 
