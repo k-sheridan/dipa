@@ -39,7 +39,7 @@ void Dipa::detectFeatures(cv::Mat img)
 	std::vector<cv::KeyPoint> kp;
 	cv::FAST(blur, kp, FAST_THRESHOLD);
 
-	cv::drawKeypoints(blur, kp, img);
+	cv::drawKeypoints(blur, kp, blur);
 
 	cv::imshow("kp", blur);
 	cv::waitKey(30);

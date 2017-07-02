@@ -48,9 +48,9 @@
 
 #define CONVERGENCE_DELTA 0.1
 
-#define FAST_THRESHOLD 10
+#define FAST_THRESHOLD 15
 #define CANNY_HYSTERESIS 20
-#define CANNY_BLUR_SIGMA 2
+#define CANNY_BLUR_SIGMA 1
 #define CANNY_BLUR_KERNEL cv::Size(0, 0)
 
 #define BOTTOM_CAMERA_TOPIC "/m7/camera/image_rect"
