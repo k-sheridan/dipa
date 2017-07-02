@@ -33,15 +33,15 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img)
 void Dipa::detectFeatures(cv::Mat img)
 {
 	cv::Mat canny, blur;
-	cv::GaussianBlur(img, blur, cv::Size(3, 3), 3, 3);
-	cv::Canny(blur, canny, CANNY_HYSTERESIS, 3 * CANNY_HYSTERESIS, 3);
+	cv::GaussianBlur(img, blur, CANNY_BLUR_KERNEL, CANNY_BLUR_SIGMA);
+	//cv::Canny(blur, canny, CANNY_HYSTERESIS, 3 * CANNY_HYSTERESIS, 3);
 
 	std::vector<cv::KeyPoint> kp;
-	cv::FAST(canny, kp, FAST_THRESHOLD);
+	cv::FAST(blur, kp, FAST_THRESHOLD);
 
-	cv::drawKeypoints(canny, kp, img);
+	cv::drawKeypoints(blur, kp, img);
 
-	cv::imshow("kp", canny);
+	cv::imshow("kp", blur);
 	cv::waitKey(30);
 }
 
