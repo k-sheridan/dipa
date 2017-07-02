@@ -49,7 +49,13 @@
 #define CONVERGENCE_DELTA 0.1
 
 #define CORNER_BLUR_SIGMA 1
-#define WHITE_THRESH 190
+#define WHITE_THRESH 140
+//lower this if you have easy corners to detect
+#define INVERSE_IMAGE_SCALE 4
+
+#define HARRIS_SIZE 2
+#define HARRIS_APERTURE 3
+#define HARRIS_K 0.04
 
 #define BOTTOM_CAMERA_TOPIC "/m7/camera/image_rect"
 #define BOTTOM_CAMERA_FRAME "bottomCamera"

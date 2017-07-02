@@ -27,18 +27,31 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img)
 {
 	cv::Mat temp = cv_bridge::toCvShare(img, img->encoding)->image.clone();
 
+	this->image_size = temp.size();
+
 	this->detectFeatures(temp);
 }
 
 void Dipa::detectFeatures(cv::Mat raw)
 {
-	cv::Mat scaled_img = raw;
+	ROS_DEBUG("detect start");
+	cv::Mat scaled_img;
+	cv::resize(raw, scaled_img, cv::Size(this->image_size.width / INVERSE_IMAGE_SCALE, this->image_size.height / INVERSE_IMAGE_SCALE));
 
-	cv::Mat white_only;
+	//cv::Mat white_only;
+	//cv::threshold(scaled_img, white_only, WHITE_THRESH, 255, CV_8UC1);
 
-	cv::threshold(scaled_img, white_only, WHITE_THRESH, 255, CV_8UC1);
+	cv::Mat harris = cv::Mat(scaled_img.size(), CV_32FC1);
+	cv::cornerHarris(scaled_img, harris, HARRIS_SIZE, HARRIS_APERTURE, HARRIS_K, cv::BORDER_DEFAULT);
 
-	cv::imshow("kp", white_only);
+	cv::Mat harris_norm, harris_norm_scaled;
+
+	cv::normalize( harris, harris_norm, 0, 255, cv::NORM_MINMAX, CV_32FC1, cv::Mat() );
+	cv::convertScaleAbs( harris_norm, harris_norm_scaled );
+
+	ROS_DEBUG("detect end");
+
+	cv::imshow("kp", harris_norm_scaled);
 	cv::waitKey(30);
 }
 
