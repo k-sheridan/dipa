@@ -25,7 +25,24 @@ Dipa::~Dipa() {
 //void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs::CameraInfoConstPtr cam)
 void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img)
 {
-	ROS_DEBUG("got image");
+	cv::Mat temp = cv_bridge::toCvShare(img, img->encoding)->image.clone();
+
+	this->detectFeatures(temp);
+}
+
+void Dipa::detectFeatures(cv::Mat img)
+{
+	cv::Mat canny, blur;
+	cv::GaussianBlur(img, blur, cv::Size(3, 3), 3, 3);
+	cv::Canny(blur, canny, CANNY_HYSTERESIS, 3 * CANNY_HYSTERESIS, 3);
+
+	std::vector<cv::KeyPoint> kp;
+	cv::FAST(canny, kp, FAST_THRESHOLD);
+
+	cv::drawKeypoints(canny, kp, img);
+
+	cv::imshow("kp", canny);
+	cv::waitKey(30);
 }
 
 /*void Dipa::setupKDTree()

@@ -48,6 +48,9 @@
 
 #define CONVERGENCE_DELTA 0.1
 
+#define FAST_THRESHOLD 5
+#define CANNY_HYSTERESIS 50
+
 #define BOTTOM_CAMERA_TOPIC "/m7/camera/image_rect"
 #define BOTTOM_CAMERA_FRAME "bottomCamera"
 
@@ -86,6 +89,8 @@ public:
 	//void bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs::CameraInfoConstPtr cam);
 
 	//void setupKDTree();
+
+	void detectFeatures(cv::Mat img);
 
 	void findClosestPoints(Matches& model);
 
