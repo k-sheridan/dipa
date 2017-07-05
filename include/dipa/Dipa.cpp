@@ -38,6 +38,8 @@ void Dipa::detectFeatures(cv::Mat raw)
 	cv::Mat scaled_img;
 	cv::resize(raw, scaled_img, cv::Size(this->image_size.width / INVERSE_IMAGE_SCALE, this->image_size.height / INVERSE_IMAGE_SCALE));
 
+	cv::GaussianBlur(scaled_img, scaled_img, cv::Size(0, 0), CORNER_BLUR_SIGMA);
+
 	//cv::Mat white_only;
 	//cv::threshold(scaled_img, white_only, WHITE_THRESH, 255, CV_8UC1);
 
