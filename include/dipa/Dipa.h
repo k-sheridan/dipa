@@ -48,12 +48,15 @@
 
 #define CONVERGENCE_DELTA 0.1
 
-#define CORNER_BLUR_SIGMA 1
+#define CORNER_BLUR_SIGMA 2
 #define WHITE_THRESH 140
 //lower this if you have easy corners to detect
 #define INVERSE_IMAGE_SCALE 4
 
-#define FAST_THRESHOLD 50
+#define FAST_THRESHOLD 40
+
+#define CANNY_THRESH_1 50
+#define CANNY_THRESH_2 200
 
 #define HARRIS_SIZE 2
 #define HARRIS_APERTURE 3

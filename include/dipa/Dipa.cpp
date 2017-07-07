@@ -54,6 +54,13 @@ void Dipa::detectFeatures(cv::Mat raw)
 	std::vector<cv::KeyPoint> fast_kp;
 	cv::FAST(scaled_img, fast_kp, FAST_THRESHOLD, true, cv::FastFeatureDetector::TYPE_9_16);
 
+
+	//detect hough lines
+	cv::Mat canny;
+	cv::Canny(scaled_img, canny, CANNY_THRESH_1, CANNY_THRESH_2);
+
+
+
 	ROS_DEBUG("detect end");
 
 	cv::drawKeypoints(scaled_img, fast_kp, scaled_img);
