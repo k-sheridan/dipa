@@ -35,10 +35,10 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img)
 void Dipa::detectFeatures(cv::Mat raw)
 {
 	ROS_DEBUG("detect start");
-	cv::Mat scaled_img;
+	cv::Mat scaled_img, scaled_img_blur;
 	cv::resize(raw, scaled_img, cv::Size(this->image_size.width / INVERSE_IMAGE_SCALE, this->image_size.height / INVERSE_IMAGE_SCALE));
 
-	cv::GaussianBlur(scaled_img, scaled_img, cv::Size(0, 0), CORNER_BLUR_SIGMA);
+	cv::GaussianBlur(scaled_img, scaled_img_blur, cv::Size(0, 0), CANNY_BLUR_SIGMA);
 
 	//cv::Mat white_only;
 	//cv::threshold(scaled_img, white_only, WHITE_THRESH, 255, CV_8UC1);
@@ -52,21 +52,106 @@ void Dipa::detectFeatures(cv::Mat raw)
 	cv::convertScaleAbs( harris_norm, harris_norm_scaled );*/
 
 	std::vector<cv::KeyPoint> fast_kp;
-	cv::FAST(scaled_img, fast_kp, FAST_THRESHOLD, true, cv::FastFeatureDetector::TYPE_9_16);
+	cv::FAST(scaled_img_blur, fast_kp, FAST_THRESHOLD, true, cv::FastFeatureDetector::TYPE_9_16);
 
 
 	//detect hough lines
 	cv::Mat canny;
-	cv::Canny(scaled_img, canny, CANNY_THRESH_1, CANNY_THRESH_2);
+	cv::Canny(scaled_img_blur, canny, CANNY_THRESH_1, CANNY_THRESH_2);
 
+	std::vector<cv::Vec2f> lines;
 
+	cv::HoughLines(canny, lines, 1, CV_PI/180, HOUGH_THRESH, 0, 0);
+
+	std::vector<cv::Point2f> intersects =  this->findLineIntersections(lines, cv::Rect(0, 0, canny.cols, canny.rows));
 
 	ROS_DEBUG("detect end");
 
-	cv::drawKeypoints(scaled_img, fast_kp, scaled_img);
+	cv::Mat out = scaled_img;
+	cv::cvtColor(out,out,CV_GRAY2RGB);
 
-	cv::imshow("kp", scaled_img);
+	//draw lines
+	for( size_t i = 0; i < lines.size(); i++ )
+	{
+		float rho = lines[i][0], theta = lines[i][1];
+		cv::Point pt1, pt2;
+		double a = cos(theta), b = sin(theta);
+		double x0 = a*rho, y0 = b*rho;
+		pt1.x = cvRound(x0 + 1000*(-b));
+		pt1.y = cvRound(y0 + 1000*(a));
+		pt2.x = cvRound(x0 - 1000*(-b));
+		pt2.y = cvRound(y0 - 1000*(a));
+		cv::line( out, pt1, pt2, cv::Scalar(255, 255, 0), 2, CV_AA);
+	}
+
+	cv::drawKeypoints(out, fast_kp, out, cv::Scalar(0, 0, 255));
+
+	cv::Mat final;
+	cv::cvtColor(canny,canny,CV_GRAY2RGB);
+
+	//draw intersects
+	for(auto e : intersects){
+		cv::drawMarker(canny, e, cv::Scalar(255, 0, 0));
+	}
+
+	cv::hconcat(out, canny, final);
+
+	cv::imshow("kp", final);
 	cv::waitKey(30);
+}
+
+bool inBounds(cv::Point2f testPt, cv::Rect bounds)
+{
+	return (testPt.x >= bounds.x && testPt.y >= bounds.y && testPt.x <= bounds.width && testPt.y <= bounds.height);
+}
+
+std::vector<cv::Point2f> Dipa::findLineIntersections(std::vector<cv::Vec2f> lines, cv::Rect boundingBox)
+{
+	std::vector<cv::Point2f> pts;
+
+	float min_d_theta = MIN_D_THETA;
+
+	for(int i = 0; i < lines.size() - 1; i++)
+	{
+		for(int j = i+1; j < lines.size(); j++)
+		{
+			float t1 = (lines[i][1]);
+			float t2 = (lines[j][1]);
+
+			//assert that the d theta is sufficiently large
+
+			float dth = fabs(t1-t2);
+			if(dth < min_d_theta)
+			{
+				continue;
+			}
+
+			float r1 = lines[i][0];
+			float r2 = lines[j][0];
+
+			float ct1=cos(t1);     //matrix element a
+			float st1=sin(t1);     //b
+			float ct2=cos(t2);     //c
+			float st2=sin(t2);     //d
+			float d=ct1*st2-st1*ct2;        //determinative (rearranged matrix for inverse)
+
+			//check if parallel
+			if(d <= PARALLEL_THRESH)
+			{
+				continue;
+			}
+
+			cv::Point2f pt = cv::Point2f((st2*r1-st1*r2)/d, (-ct2*r1+ct1*r2)/d);
+
+
+			if(inBounds(pt, boundingBox))
+			{
+				pts.push_back(pt);
+			}
+		}
+	}
+
+	return pts;
 }
 
 /*void Dipa::setupKDTree()
