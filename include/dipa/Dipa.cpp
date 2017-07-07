@@ -109,7 +109,7 @@ std::vector<cv::Point2f> Dipa::findLineIntersections(std::vector<cv::Vec2f> line
 {
 	std::vector<cv::Point2f> pts;
 
-	float min_d_theta = MIN_D_THETA;
+	//float min_d_theta = MIN_D_THETA;
 
 	for(int i = 0; i < lines.size() - 1; i++)
 	{
@@ -118,13 +118,8 @@ std::vector<cv::Point2f> Dipa::findLineIntersections(std::vector<cv::Vec2f> line
 			float t1 = (lines[i][1]);
 			float t2 = (lines[j][1]);
 
-			//assert that the d theta is sufficiently large
+			//assert that the lines are not parallel
 
-			float dth = fabs(t1-t2);
-			if(dth < min_d_theta)
-			{
-				continue;
-			}
 
 			float r1 = lines[i][0];
 			float r2 = lines[j][0];
@@ -135,8 +130,8 @@ std::vector<cv::Point2f> Dipa::findLineIntersections(std::vector<cv::Vec2f> line
 			float st2=sin(t2);     //d
 			float d=ct1*st2-st1*ct2;        //determinative (rearranged matrix for inverse)
 
-			//check if parallel
-			if(d <= PARALLEL_THRESH)
+			//check if the vectors are parallel
+			if(fabs(d) < PARALLEL_THRESH)
 			{
 				continue;
 			}
