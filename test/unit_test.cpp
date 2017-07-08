@@ -111,9 +111,9 @@ int main(int argc, char **argv)
 	w2c1.setOrigin(tf::Vector3(0, 0, 1));
 
 	//give it a world to base guess
-	//Dipa dipa(w2c1);
+	Dipa dipa(w2c1);
 
-	cv::Mat_<float> K = (cv::Mat_<float>(3, 3) << 300, 0, 300, 0, 300, 300, 0, 0, 1);
+	/*cv::Mat_<float> K = (cv::Mat_<float>(3, 3) << 300, 0, 300, 0, 300, 300, 0, 0, 1);
 
 	GridRenderer gr;
 
@@ -127,7 +127,7 @@ int main(int argc, char **argv)
 	tf::Transform motion;
 	motion.setRotation(tf::Quaternion(0, 0.01, 0.01, 1));
 	//w2c1.setRotation(tf::Quaternion(1/sqrt(2), 1/sqrt(2), 0, 0));
-	motion.setOrigin(tf::Vector3(0, 0, -0.2));
+	motion.setOrigin(tf::Vector3(0, 0.1, -0.2));
 
 	gr.setW2C(w2c1*motion);
 
@@ -165,7 +165,7 @@ int main(int argc, char **argv)
 		cv::waitKey(30);
 	}
 
-	ros::spin();
+	ros::spin();*/
 
 	return 0;
 }

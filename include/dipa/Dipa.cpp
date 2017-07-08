@@ -19,7 +19,7 @@ Dipa::Dipa(tf::Transform initial_world_to_base_transform) {
 	//this->state.updatePose(initial_world_to_base_transform, ros::Time::now()); // this will cause a problem with datasets
 	this->state.updatePose(initial_world_to_base_transform, ros::Time(0));
 
-	//ros::spin(); // go into the main loop;
+	ros::spin(); // go into the main loop;
 
 }
 
@@ -49,6 +49,7 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 	{
 		// run the icp algorithm with predicted pose
 		this->state.updatePose(this->runICP(this->state.predict(img->header.stamp)), img->header.stamp);
+		//this->state.updatePose(this->runICP(this->state.getCurrentBestPose()), img->header.stamp);
 	}
 	else
 	{
@@ -320,7 +321,7 @@ tf::Transform Dipa::runICP(tf::Transform w2c_guess)
 	blank = matches.draw(blank, this->detected_corners);
 	cv::imshow("render", blank);
 	cv::waitKey(30);
-	ros::Duration dur(3);
+	ros::Duration dur(1);
 	dur.sleep();
 #endif
 
@@ -350,7 +351,7 @@ tf::Transform Dipa::runICP(tf::Transform w2c_guess)
 			blank = matches.draw(blank, this->detected_corners);
 			cv::imshow("render", blank);
 			cv::waitKey(30);
-			ros::Duration dur(3);
+			ros::Duration dur(1);
 			dur.sleep();
 #endif
 			break;
@@ -365,7 +366,7 @@ tf::Transform Dipa::runICP(tf::Transform w2c_guess)
 		blank = matches.draw(blank, this->detected_corners);
 		cv::imshow("render", blank);
 		cv::waitKey(30);
-		ros::Duration dur(3);
+		ros::Duration dur(1);
 		dur.sleep();
 #endif
 

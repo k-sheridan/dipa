@@ -18,7 +18,7 @@
 
 //maximum normal for a correspondence in pixels
 #define USE_MAX_NORM true
-#define MAX_NORM 20
+#define MAX_NORM 25
 
 //CORNER DETECTION
 #define WHITE_THRESH 140
