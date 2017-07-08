@@ -1,12 +1,9 @@
 /*
- * Dipa.h
+ * dipa_node.cpp
  *
- *  Created on: Jul 1, 2017
+ *  Created on: Jul 8, 2017
  *      Author: kevin
  */
-
-#ifndef DIPA_INCLUDE_DIPA_DIPA_H_
-#define DIPA_INCLUDE_DIPA_DIPA_H_
 
 #include <ros/ros.h>
 
@@ -42,51 +39,29 @@
 #include <sstream>
 #include <cv_bridge/cv_bridge.h>
 
-#include <dipa/DipaParams.h>
-
 #include <dipa/GridRenderer.h>
+#include <dipa/Dipa.h>
 
-#include <dipa/DipaTypes.h>
 
-class Dipa {
-public:
+int main(int argc, char **argv) {
+	ros::init(argc, argv, "dipa_test");
 
-	tf::TransformListener tf_listener;
+	double x, y, z, r, p, yaw;
 
-	GridRenderer renderer;
+	ros::param::param<double>("initial_x", x, 0.25);
+	ros::param::param<double>("initial_y", y, -0.75);
+	ros::param::param<double>("initial_z", z, 1.0);
+	ros::param::param<double>("initial_roll", r, 180);
+	ros::param::param<double>("initial_pitch", p, 0);
+	ros::param::param<double>("initial_yaw", yaw, 0);
 
-	cv::Size image_size;
-	cv::Mat_<float> image_K;
+	tf::Vector3 origin = tf::Vector3(x, y, z);
+	tf::Matrix3x3 rot;
+	rot.setRPY(r, p, yaw);
 
-	std::vector<cv::Point2f> detected_corners;
 
-	DipaState state;
+	//Dipa dipa(tf::Transform(rot, origin));
+	Dipa dipa(tf::Transform(tf::Quaternion(1, 0, 0, 0), tf::Vector3(0, 0, 1)));
 
-	//cv::flann::Index* kdtree;
-
-	Dipa(tf::Transform initial_world_to_base_transform, bool debug=false);
-	virtual ~Dipa();
-
-	void run(){
-		ros::spin();
-	}
-
-	//void bottomCamCb(const sensor_msgs::ImageConstPtr& img);
-	void bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs::CameraInfoConstPtr& cam);
-
-	//void setupKDTree();
-
-	void detectFeatures(cv::Mat img);
-
-	std::vector<cv::Point2f> findLineIntersections(std::vector<cv::Vec2f> lines, cv::Rect boundingBox);
-
-	void findClosestPoints(Matches& model);
-
-	void tf2rvecAndtvec(tf::Transform tf, cv::Mat& tvec, cv::Mat& rvec);
-
-	tf::Transform rvecAndtvec2tf(cv::Mat tvec, cv::Mat rvec);
-
-	tf::Transform runICP(tf::Transform w2c_guess);
-};
-
-#endif /* DIPA_INCLUDE_DIPA_DIPA_H_ */
+	return 0;
+}

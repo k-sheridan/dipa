@@ -45,14 +45,14 @@
 cv::Mat first;
 bool firstSet = false;
 
-static void showDifference(const cv::Mat& image1, const cv::Mat& image2, const char* title)
-{
+static void showDifference(const cv::Mat& image1, const cv::Mat& image2,
+		const char* title) {
 	cv::Mat img1, img2;
 	image1.convertTo(img1, CV_32FC3);
 	image2.convertTo(img2, CV_32FC3);
-	if(img1.channels() != 1)
+	if (img1.channels() != 1)
 		cvtColor(img1, img1, CV_RGB2GRAY);
-	if(img2.channels() != 1)
+	if (img2.channels() != 1)
 		cvtColor(img2, img2, CV_RGB2GRAY);
 
 	cv::Mat imgDiff;
@@ -66,16 +66,14 @@ static void showDifference(const cv::Mat& image1, const cv::Mat& image2, const c
 	imshow(title, imgSh);
 }
 
-void imgcb(const sensor_msgs::ImageConstPtr& img)
-{
+void imgcb(const sensor_msgs::ImageConstPtr& img) {
 	cv::Mat temp = cv_bridge::toCvShare(img, img->encoding)->image.clone();
 
 	cv::resize(temp, temp, cv::Size(320, 240));
 
 	temp.convertTo(temp, CV_64FC1); // convert to double 1 channel
 
-	if(!firstSet)
-	{
+	if (!firstSet) {
 		first = temp;
 		firstSet = true;
 		ROS_DEBUG("set first frame");
@@ -91,7 +89,8 @@ void imgcb(const sensor_msgs::ImageConstPtr& img)
 	mappPyr.calculate(first, temp, mapPtr);
 
 	//get the result
-	cv::reg::MapProjec* mapProj = dynamic_cast<cv::reg::MapProjec*>(mapPtr.get());
+	cv::reg::MapProjec* mapProj =
+			dynamic_cast<cv::reg::MapProjec*>(mapPtr.get());
 	mapProj->normalize();
 
 	cv::Mat dest;
@@ -100,10 +99,8 @@ void imgcb(const sensor_msgs::ImageConstPtr& img)
 
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
 	ros::init(argc, argv, "dipa_test");
-
 
 	tf::Transform w2c1;
 	w2c1.setRotation(tf::Quaternion(1, 0, 0, 0));
@@ -111,9 +108,10 @@ int main(int argc, char **argv)
 	w2c1.setOrigin(tf::Vector3(0, 0, 1));
 
 	//give it a world to base guess
-	Dipa dipa(w2c1);
+	//Dipa dipa(w2c1);
 
-	/*cv::Mat_<float> K = (cv::Mat_<float>(3, 3) << 300, 0, 300, 0, 300, 300, 0, 0, 1);
+	cv::Mat_<float> K =
+			(cv::Mat_<float>(3, 3) << 300, 0, 300, 0, 300, 300, 0, 0, 1);
 
 	GridRenderer gr;
 
@@ -121,17 +119,16 @@ int main(int argc, char **argv)
 	gr.setSize(cv::Size(600, 600));
 	gr.setIntrinsic(K);
 
-
 	Matches matches = gr.renderGridCorners();
 
 	tf::Transform motion;
-	motion.setRotation(tf::Quaternion(0, 0.01, 0.01, 1));
+	motion.setRotation(tf::Quaternion(0, 0.02, 0.05, 1));
 	//w2c1.setRotation(tf::Quaternion(1/sqrt(2), 1/sqrt(2), 0, 0));
-	motion.setOrigin(tf::Vector3(0, 0.1, -0.2));
+	motion.setOrigin(tf::Vector3(0, 0.1, -0.1));
 
-	gr.setW2C(w2c1*motion);
+	gr.setW2C(w2c1 * motion);
 
-	Dipa dipa(w2c1*motion);
+	Dipa dipa(w2c1 * motion, true);
 
 	dipa.image_size = cv::Size(600, 600);
 	dipa.image_K = K;
@@ -141,10 +138,10 @@ int main(int argc, char **argv)
 
 	dipa.detected_corners = gr.renderGridCorners().getObjectPixelsInOrder();
 
-	dipa.detected_corners.pop_back();
-	dipa.detected_corners.pop_back();
-	dipa.detected_corners.pop_back();
-	dipa.detected_corners.pop_back();
+	//dipa.detected_corners.pop_back();
+	//dipa.detected_corners.pop_back();
+	//dipa.detected_corners.pop_back();
+	//dipa.detected_corners.pop_back();
 
 	ROS_DEBUG_STREAM("got: " << dipa.detected_corners.size());
 
@@ -153,19 +150,45 @@ int main(int argc, char **argv)
 	dipa.image_K = (K);
 	dipa.image_size = (cv::Size(600, 600));
 
-
 	dipa.runICP(w2c1);
 
-	while(ros::ok())
-	{
-		ROS_DEBUG("draw");
-		cv::Mat blank = cv::Mat::zeros(cv::Size(600, 600), CV_8UC3);
-		blank = matches.draw(blank, dipa.detected_corners);
-		cv::imshow("render", blank);
-		cv::waitKey(30);
+	w2c1 = w2c1 * motion;
+
+	ros::Time start = ros::Time::now();
+
+	dipa.state.updatePose(w2c1, start);
+
+	while (ros::ok()) {
+		gr.setW2C(w2c1 * motion);
+		dipa.detected_corners = gr.renderGridCorners().getObjectPixelsInOrder();
+
+		dipa.findClosestPoints(matches);
+
+		dipa.image_K = (K);
+		dipa.image_size = (cv::Size(600, 600));
+
+		start = start + ros::Duration(0.1);
+
+
+		if(dipa.state.twistSet() && dipa.state.currentPoseSet())
+		{
+			dipa.state.updatePose(dipa.runICP(dipa.state.predict(start)), start);
+		}
+		else{
+		dipa.state.updatePose(dipa.runICP(dipa.state.getCurrentBestPose()), start);
+		}
+		w2c1 = w2c1 * motion;
+
+
+
+		/*ROS_DEBUG("draw");
+		 cv::Mat blank = cv::Mat::zeros(cv::Size(600, 600), CV_8UC3);
+		 blank = matches.draw(blank, dipa.detected_corners);
+		 cv::imshow("render", blank);
+		 cv::waitKey(30);*/
 	}
 
-	ros::spin();*/
+	ros::spin();
 
 	return 0;
 }

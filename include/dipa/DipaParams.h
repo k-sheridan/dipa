@@ -25,7 +25,10 @@
 //lower this if you have easy corners to detect
 #define INVERSE_IMAGE_SCALE 4.0
 
-#define FAST_THRESHOLD 40
+//uses fast corner detctor in addition to the line corners
+#define USE_FAST_CORNERS false
+#define FAST_BLUR_SIGMA 2
+#define FAST_THRESHOLD 100
 
 #define CANNY_BLUR_SIGMA 1.2
 #define CANNY_THRESH_1 50

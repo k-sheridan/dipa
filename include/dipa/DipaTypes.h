@@ -205,7 +205,7 @@ public:
 		if (current_pose_set && last_pose_set && last_best_t != ros::Time(0)) // make sure that the last pose has a valid time
 		{
 			//numerically derive the velocities
-			tf::Transform delta = current_best_w2b * last_best_w2b.inverse();
+			tf::Transform delta = last_best_w2b.inverse() * current_best_w2b;
 
 			double dt = (current_best_t - last_best_t).toSec();
 
@@ -218,8 +218,10 @@ public:
 			omega.setZ(y);
 			omega /= dt;
 
-			vel = (current_best_w2b.getBasis().inverse() * delta.getOrigin())
+			vel = (delta.getOrigin())
 							/ dt; // this transforms the delta into the base frame
+
+			ROS_DEBUG_STREAM("DERIVED TWIST vel: " << vel.x() << ", " << vel.y() << ", " << vel.z() << "\n omega: " << omega.x() << ", " << omega.y() << ", " << omega.z());
 
 			twist_set = true;
 		}
@@ -237,7 +239,11 @@ public:
 
 		double dt = (new_t - current_best_t).toSec();
 
+		ROS_DEBUG_STREAM("dt: " << dt);
+
 		ROS_ASSERT(dt > 0);
+
+		ROS_DEBUG_STREAM("predicting with vel: " << vel.x() << ", " << vel.y() << ", " << vel.z() << "\n omega: " << omega.x() << ", " << omega.y() << ", " << omega.z());
 
 		//form update transform
 		tf::Transform delta;
@@ -248,7 +254,8 @@ public:
 		rot.setRPY(dtheta.x(), dtheta.y(), dtheta.z());
 
 		delta.setBasis(rot);
-		delta.setOrigin(current_best_w2b.getBasis() * (vel * dt)); //creates a base frame delta then transforms it into the world frame
+
+		delta.setOrigin((vel * dt)); //creates a base frame delta then transforms it into the world frame
 
 		return current_best_w2b * delta; // convolve the current best pose estimate
 	}

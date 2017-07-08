@@ -7,7 +7,7 @@
 
 #include <dipa/Dipa.h>
 
-Dipa::Dipa(tf::Transform initial_world_to_base_transform) {
+Dipa::Dipa(tf::Transform initial_world_to_base_transform, bool debug) {
 	ros::NodeHandle nh;
 
 	image_transport::ImageTransport it(nh);
@@ -19,7 +19,10 @@ Dipa::Dipa(tf::Transform initial_world_to_base_transform) {
 	//this->state.updatePose(initial_world_to_base_transform, ros::Time::now()); // this will cause a problem with datasets
 	this->state.updatePose(initial_world_to_base_transform, ros::Time(0));
 
-	ros::spin(); // go into the main loop;
+	if(!debug)
+	{
+		ros::spin(); // go into the main loop;
+	}
 
 }
 
@@ -48,8 +51,8 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 	if(this->state.twistSet())
 	{
 		// run the icp algorithm with predicted pose
-		this->state.updatePose(this->runICP(this->state.predict(img->header.stamp)), img->header.stamp);
-		//this->state.updatePose(this->runICP(this->state.getCurrentBestPose()), img->header.stamp);
+		//this->state.updatePose(this->runICP(this->state.predict(img->header.stamp)), img->header.stamp);
+		this->state.updatePose(this->runICP(this->state.getCurrentBestPose()), img->header.stamp);
 	}
 	else
 	{
@@ -78,10 +81,12 @@ void Dipa::detectFeatures(cv::Mat raw)
 
 	cv::normalize( harris, harris_norm, 0, 255, cv::NORM_MINMAX, CV_32FC1, cv::Mat() );
 	cv::convertScaleAbs( harris_norm, harris_norm_scaled );*/
-
-	//std::vector<cv::KeyPoint> fast_kp;
-	//cv::FAST(scaled_img_blur, fast_kp, FAST_THRESHOLD, true, cv::FastFeatureDetector::TYPE_9_16);
-
+#if USE_FAST_CORNERS
+	cv::Mat fast_blur;
+	cv::GaussianBlur(scaled_img, fast_blur, cv::Size(0, 0), FAST_BLUR_SIGMA);
+	std::vector<cv::KeyPoint> fast_kp;
+	cv::FAST(fast_blur, fast_kp, FAST_THRESHOLD, true, cv::FastFeatureDetector::TYPE_9_16);
+#endif
 
 	//detect hough lines
 	cv::Mat canny;
@@ -113,9 +118,9 @@ void Dipa::detectFeatures(cv::Mat raw)
 		pt2.y = cvRound(y0 - 1000*(a));
 		cv::line( out, pt1, pt2, cv::Scalar(255, 255, 0), 2, CV_AA);
 	}
-
-	//cv::drawKeypoints(out, fast_kp, out, cv::Scalar(0, 0, 255));
-
+#if USE_FAST_CORNERS
+	cv::drawKeypoints(out, fast_kp, out, cv::Scalar(0, 0, 255));
+#endif
 	cv::Mat final;
 	cv::cvtColor(canny,canny,CV_GRAY2RGB);
 
@@ -131,6 +136,15 @@ void Dipa::detectFeatures(cv::Mat raw)
 #endif
 
 	this->detected_corners = intersects; // set the corners
+
+	//if the user wants to include fast corners
+#if USE_FAST_CORNERS
+	for(auto e : fast_kp)
+	{
+		this->detected_corners.push_back(e.pt);
+	}
+#endif
+
 }
 
 bool inBounds(cv::Point2f testPt, cv::Rect bounds)
@@ -322,7 +336,7 @@ tf::Transform Dipa::runICP(tf::Transform w2c_guess)
 	cv::imshow("render", blank);
 	cv::waitKey(30);
 	ros::Duration dur(1);
-	dur.sleep();
+	//dur.sleep();
 #endif
 
 	for(int i = 0; i < MAX_ITERATIONS; i++)
@@ -352,7 +366,7 @@ tf::Transform Dipa::runICP(tf::Transform w2c_guess)
 			cv::imshow("render", blank);
 			cv::waitKey(30);
 			ros::Duration dur(1);
-			dur.sleep();
+			//dur.sleep();
 #endif
 			break;
 		}
@@ -367,7 +381,7 @@ tf::Transform Dipa::runICP(tf::Transform w2c_guess)
 		cv::imshow("render", blank);
 		cv::waitKey(30);
 		ros::Duration dur(1);
-		dur.sleep();
+		//dur.sleep();
 #endif
 
 	}
