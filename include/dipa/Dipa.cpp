@@ -15,6 +15,10 @@ Dipa::Dipa(tf::Transform initial_world_to_base_transform) {
 	image_transport::CameraSubscriber bottom_cam_sub = it.subscribeCamera(BOTTOM_CAMERA_TOPIC, 2, &Dipa::bottomCamCb, this);
 
 
+	//set the initial guess to the passed in transform
+	//this->state.updatePose(initial_world_to_base_transform, ros::Time::now()); // this will cause a problem with datasets
+	this->state.updatePose(initial_world_to_base_transform, ros::Time(0));
+
 	ros::spin(); // go into the main loop;
 
 }
@@ -27,11 +31,30 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 {
 	cv::Mat temp = cv_bridge::toCvShare(img, img->encoding)->image.clone();
 
-	this->image_size = temp.size();
-	this->image_K = (cv::Mat_<float>(3, 3) << cam->K.at(0), cam->K.at(1), cam->K.at(2), cam->K.at(3), cam->K.at(4), cam->K.at(5), cam->K.at(6), cam->K.at(7), cam->K.at(8));
+	// scale the image parameters for the renderer
+	this->image_size = cv::Size(temp.cols / INVERSE_IMAGE_SCALE, temp.rows / INVERSE_IMAGE_SCALE);
+	this->image_K = (1.0 / INVERSE_IMAGE_SCALE) * (cv::Mat_<float>(3, 3) << cam->K.at(0), cam->K.at(1), cam->K.at(2), cam->K.at(3), cam->K.at(4), cam->K.at(5), cam->K.at(6), cam->K.at(7), cam->K.at(8));
 
 	this->detectFeatures(temp);
 
+	ROS_ASSERT(this->state.currentPoseSet());
+
+	if(this->state.getCurrentBestPoseStamp() != ros::Time::now())
+	{
+		ROS_ASSERT(img->header.stamp > this->state.getCurrentBestPoseStamp());
+	}
+
+	//TODO transform the initial base transform int othe camera coordinate frame
+	if(this->state.twistSet())
+	{
+		// run the icp algorithm with predicted pose
+		this->state.updatePose(this->runICP(this->state.predict(img->header.stamp)), img->header.stamp);
+	}
+	else
+	{
+		// simply run icp with current best guess
+		this->state.updatePose(this->runICP(this->state.getCurrentBestPose()), img->header.stamp);
+	}
 
 
 }
@@ -40,7 +63,7 @@ void Dipa::detectFeatures(cv::Mat raw)
 {
 	ROS_DEBUG("detect start");
 	cv::Mat scaled_img, scaled_img_blur;
-	cv::resize(raw, scaled_img, cv::Size(this->image_size.width / INVERSE_IMAGE_SCALE, this->image_size.height / INVERSE_IMAGE_SCALE));
+	cv::resize(raw, scaled_img, cv::Size(raw.cols / INVERSE_IMAGE_SCALE, raw.rows / INVERSE_IMAGE_SCALE));
 
 	cv::GaussianBlur(scaled_img, scaled_img_blur, cv::Size(0, 0), CANNY_BLUR_SIGMA);
 

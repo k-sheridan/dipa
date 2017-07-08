@@ -154,7 +154,7 @@ public:
 		current_best_t = t;
 		current_best_w2b = trans;
 
-		if(current_pose_set && last_pose_set)
+		if(current_pose_set && last_pose_set && last_best_t != ros::Time(0)) // make sure that the last pose has a valid time
 		{
 			//numerically derive the velocities
 			tf::Transform delta = current_best_w2b * last_best_w2b.inverse();
@@ -181,6 +181,12 @@ public:
 	tf::Transform predict(ros::Time new_t)
 	{
 		ROS_ASSERT(twist_set && current_pose_set);
+
+		//if the current best time is invalid just return the current best pose
+		if(current_best_t == ros::Time(0))
+		{
+			return current_best_w2b;
+		}
 
 		double dt = (new_t - current_best_t).toSec();
 

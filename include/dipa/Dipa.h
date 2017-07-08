@@ -42,7 +42,7 @@
 #include <sstream>
 #include <cv_bridge/cv_bridge.h>
 
-#define SUPER_DEBUG false
+#define SUPER_DEBUG true
 
 #define MAX_ITERATIONS 20
 
@@ -51,7 +51,7 @@
 //CORNER DETECTION
 #define WHITE_THRESH 140
 //lower this if you have easy corners to detect
-#define INVERSE_IMAGE_SCALE 4
+#define INVERSE_IMAGE_SCALE 4.0
 
 #define FAST_THRESHOLD 40
 
