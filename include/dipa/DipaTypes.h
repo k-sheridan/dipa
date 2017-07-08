@@ -122,18 +122,92 @@ struct DipaState{
 
 private:
 	tf::Vector3 omega; // rad/s
-	tf::Vector3 vel; // m/s
+	tf::Vector3 vel; // m/s in base frame
 
-	bool twist_set;
-public:
+	tf::Transform current_best_w2b;
+	ros::Time current_best_t;
 
 	tf::Transform last_best_w2b;
 	ros::Time last_best_t;
 
+	bool twist_set;
+	bool current_pose_set;
+	bool last_pose_set;
+public:
+
 	DipaState()
-	{
+{
 		twist_set = false;
+		current_pose_set = false;
+		last_pose_set = false;
+}
+
+	void updatePose(tf::Transform trans, ros::Time t)
+	{
+		if(current_pose_set) // we can now set the last pose
+		{
+			last_pose_set = true;
+			last_best_t = current_best_t;
+			last_best_w2b = current_best_w2b;
+		}
+
+		current_best_t = t;
+		current_best_w2b = trans;
+
+		if(current_pose_set && last_pose_set)
+		{
+			//numerically derive the velocities
+			tf::Transform delta = current_best_w2b * last_best_w2b.inverse();
+
+			double dt = (current_best_t - last_best_t).toSec();
+
+			ROS_ASSERT(dt > 0);
+
+			double r, p, y;
+			delta.getBasis().getRPY(r, p, y);
+			omega.setX(r);
+			omega.setY(p);
+			omega.setZ(y);
+			omega /= dt;
+
+			vel = (current_best_w2b.getBasis().inverse() * delta.getOrigin()) / dt; // this transforms the delta into the base frame
+
+			twist_set = true;
+		}
+
+		current_pose_set = true;
 	}
+
+	tf::Transform predict(ros::Time new_t)
+	{
+		ROS_ASSERT(twist_set && current_pose_set);
+
+		double dt = (new_t - current_best_t).toSec();
+
+		ROS_ASSERT(dt > 0);
+
+		//form update transform
+		tf::Transform delta;
+
+		tf::Vector3 dtheta = omega * dt;
+
+		tf::Matrix3x3 rot;
+		rot.setRPY(dtheta.x(), dtheta.y(), dtheta.z());
+
+		delta.setBasis(rot);
+		delta.setOrigin(current_best_w2b.getBasis() * (vel*dt)); //creates a base frame delta then transforms it into the world frame
+
+		return current_best_w2b * delta; // convolve the current best pose estimate
+	}
+
+	bool currentPoseSet(){return current_pose_set;}
+	bool twistSet(){return twist_set;}
+
+	tf::Transform getCurrentBestPose(){ROS_ASSERT(current_pose_set); return current_best_w2b;}
+	ros::Time getCurrentBestPoseStamp(){ROS_ASSERT(current_pose_set); return current_best_t;}
+	tf::Vector3 getBaseFrameVelocity(){ROS_ASSERT(twist_set); return vel;}
+	tf::Vector3 getBaseFrameOmega(){ROS_ASSERT(twist_set); return omega;}
+
 
 };
 

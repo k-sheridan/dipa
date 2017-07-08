@@ -104,8 +104,8 @@ public:
 		ros::spin();
 	}
 
-	void bottomCamCb(const sensor_msgs::ImageConstPtr& img);
-	//void bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs::CameraInfoConstPtr cam);
+	//void bottomCamCb(const sensor_msgs::ImageConstPtr& img);
+	void bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs::CameraInfoConstPtr& cam);
 
 	//void setupKDTree();
 

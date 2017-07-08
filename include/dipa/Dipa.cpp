@@ -12,7 +12,7 @@ Dipa::Dipa(tf::Transform initial_world_to_base_transform) {
 
 	image_transport::ImageTransport it(nh);
 	//TODO make a camera sub when I have a properly recorded dataset
-	image_transport::Subscriber bottom_cam_sub = it.subscribe(BOTTOM_CAMERA_TOPIC, 2, &Dipa::bottomCamCb, this);
+	image_transport::CameraSubscriber bottom_cam_sub = it.subscribeCamera(BOTTOM_CAMERA_TOPIC, 2, &Dipa::bottomCamCb, this);
 
 
 	ros::spin(); // go into the main loop;
@@ -22,14 +22,18 @@ Dipa::Dipa(tf::Transform initial_world_to_base_transform) {
 Dipa::~Dipa() {
 
 }
-//void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs::CameraInfoConstPtr cam)
-void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img)
+void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs::CameraInfoConstPtr& cam)
+//void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img)
 {
 	cv::Mat temp = cv_bridge::toCvShare(img, img->encoding)->image.clone();
 
 	this->image_size = temp.size();
+	this->image_K = (cv::Mat_<float>(3, 3) << cam->K.at(0), cam->K.at(1), cam->K.at(2), cam->K.at(3), cam->K.at(4), cam->K.at(5), cam->K.at(6), cam->K.at(7), cam->K.at(8));
 
 	this->detectFeatures(temp);
+
+
+
 }
 
 void Dipa::detectFeatures(cv::Mat raw)
@@ -51,8 +55,8 @@ void Dipa::detectFeatures(cv::Mat raw)
 	cv::normalize( harris, harris_norm, 0, 255, cv::NORM_MINMAX, CV_32FC1, cv::Mat() );
 	cv::convertScaleAbs( harris_norm, harris_norm_scaled );*/
 
-	std::vector<cv::KeyPoint> fast_kp;
-	cv::FAST(scaled_img_blur, fast_kp, FAST_THRESHOLD, true, cv::FastFeatureDetector::TYPE_9_16);
+	//std::vector<cv::KeyPoint> fast_kp;
+	//cv::FAST(scaled_img_blur, fast_kp, FAST_THRESHOLD, true, cv::FastFeatureDetector::TYPE_9_16);
 
 
 	//detect hough lines
@@ -66,6 +70,8 @@ void Dipa::detectFeatures(cv::Mat raw)
 	std::vector<cv::Point2f> intersects =  this->findLineIntersections(lines, cv::Rect(0, 0, canny.cols, canny.rows));
 
 	ROS_DEBUG("detect end");
+
+#if SUPER_DEBUG
 
 	cv::Mat out = scaled_img;
 	cv::cvtColor(out,out,CV_GRAY2RGB);
@@ -84,7 +90,7 @@ void Dipa::detectFeatures(cv::Mat raw)
 		cv::line( out, pt1, pt2, cv::Scalar(255, 255, 0), 2, CV_AA);
 	}
 
-	cv::drawKeypoints(out, fast_kp, out, cv::Scalar(0, 0, 255));
+	//cv::drawKeypoints(out, fast_kp, out, cv::Scalar(0, 0, 255));
 
 	cv::Mat final;
 	cv::cvtColor(canny,canny,CV_GRAY2RGB);
@@ -98,6 +104,9 @@ void Dipa::detectFeatures(cv::Mat raw)
 
 	cv::imshow("kp", final);
 	cv::waitKey(30);
+#endif
+
+	this->detected_corners = intersects; // set the corners
 }
 
 bool inBounds(cv::Point2f testPt, cv::Rect bounds)
