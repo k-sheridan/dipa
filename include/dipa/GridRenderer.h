@@ -31,6 +31,8 @@
 #include <tf/tf.h>
 #include <tf/tfMessage.h>
 
+#include <dipa/DipaParams.h>
+
 #include <dipa/DipaTypes.h>
 
 #define RENDER_DEBUG = true
@@ -45,10 +47,11 @@
 
 #define METRIC_RESOLUTION 0.01
 
-#define GRID_SIZE 10
-#define GRID_SPACING 0.32
-#define INNER_LINE_THICKNESS 0.04
-#define OUTER_LINE_THICKNESS 0.08
+#define GRID_WIDTH 2
+#define GRID_HEIGHT 4
+#define GRID_SPACING 0.75
+#define INNER_LINE_THICKNESS 0.05
+#define OUTER_LINE_THICKNESS 0.05
 #define BOUNDARY_PADDING 1
 
 
@@ -72,7 +75,8 @@ private:
 	std::deque<Quad> grid;
 	std::vector<tf::Vector3> grid_corners;
 
-	int grid_size;
+	int grid_width;
+	int grid_height;
 	double grid_spacing;
 	double inner_line_thickness;
 	double outer_line_thickness;

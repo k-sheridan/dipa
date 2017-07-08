@@ -19,7 +19,7 @@ Dipa::Dipa(tf::Transform initial_world_to_base_transform) {
 	//this->state.updatePose(initial_world_to_base_transform, ros::Time::now()); // this will cause a problem with datasets
 	this->state.updatePose(initial_world_to_base_transform, ros::Time(0));
 
-	ros::spin(); // go into the main loop;
+	//ros::spin(); // go into the main loop;
 
 }
 
@@ -240,8 +240,8 @@ kdtree.radiusSearch(query, indices, dists, range, numOfPoints);
 		}
 
 		e.measurement = cv::Point2d(detected_corners.at(best).x, detected_corners.at(best).y);
-		e.pixelNorm = best;
-		//ROS_DEBUG_STREAM("norm: " << e.getPixelNorm());
+		e.pixelNorm = min;
+		//ROS_DEBUG_STREAM("norm: " << e.pixelNorm);
 	}
 
 	//ROS_DEBUG("neighbors found");
@@ -309,25 +309,50 @@ tf::Transform Dipa::runICP(tf::Transform w2c_guess)
 	Matches matches = this->renderer.renderGridCorners(); // render the corners into this frame given our current guess
 
 	this->findClosestPoints(matches); // find the closest points between the model and the observation corners
-	double last_sse = matches.sumErrors();
+	double last_sse = matches.computePerPixelError();
 	double current_sse = last_sse;
+
+	ROS_DEBUG_STREAM("initial error: " << current_sse);
+
+
+#if SUPER_DEBUG
+	cv::Mat blank = cv::Mat::zeros(this->image_size, CV_8UC3);
+	blank = matches.draw(blank, this->detected_corners);
+	cv::imshow("render", blank);
+	cv::waitKey(30);
+	ros::Duration dur(3);
+	dur.sleep();
+#endif
 
 	for(int i = 0; i < MAX_ITERATIONS; i++)
 	{
 		// now we minimize the photometric error between our known model and our observations using the correspondences we have just guessed
+#if USE_MAX_NORM
+		Matches huber = matches.performHuberMaxNorm(MAX_NORM);
+		ROS_DEBUG_STREAM("performed huber max norm size before: " << matches.matches.size() << " now: " << huber.matches.size());
+		cv::solvePnP(huber.getObjectInOrder(), huber.getMeasurementsInOrder(), this->image_K, cv::noArray(), rvec, tvec, true, cv::SOLVEPNP_ITERATIVE); // use the current guess to help convergence
+#else
 		cv::solvePnP(matches.getObjectInOrder(), matches.getMeasurementsInOrder(), this->image_K, cv::noArray(), rvec, tvec, true, cv::SOLVEPNP_ITERATIVE); // use the current guess to help convergence
-
+#endif
 		// recalculate correspondences and sse
 		this->renderer.setC2W(this->rvecAndtvec2tf(tvec, rvec)); // the the renderer's current pose
 		matches = this->renderer.renderGridCorners(); // render the corners into this frame given our current guess
 
 		this->findClosestPoints(matches); // find the closest points between the model and the observation corners
-		current_sse = matches.sumErrors(); // compute current sse
+		current_sse = matches.computePerPixelError(); // compute current error
 
 		ROS_DEBUG_STREAM("current error: " << current_sse);
 
 		if(fabs(current_sse - last_sse) < CONVERGENCE_DELTA){
 			ROS_DEBUG("PNP-ICP Converged");
+#if SUPER_DEBUG
+			cv::Mat blank = cv::Mat::zeros(this->image_size, CV_8UC3);
+			blank = matches.draw(blank, this->detected_corners);
+			cv::imshow("render", blank);
+			cv::waitKey(30);
+			ros::Duration dur(3);
+			dur.sleep();
+#endif
 			break;
 		}
 		else
@@ -340,7 +365,7 @@ tf::Transform Dipa::runICP(tf::Transform w2c_guess)
 		blank = matches.draw(blank, this->detected_corners);
 		cv::imshow("render", blank);
 		cv::waitKey(30);
-		ros::Duration dur(1);
+		ros::Duration dur(3);
 		dur.sleep();
 #endif
 

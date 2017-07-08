@@ -15,7 +15,8 @@ GridRenderer::GridRenderer() {
 	boundary_padding = BOUNDARY_PADDING;
 	inner_line_thickness = INNER_LINE_THICKNESS;
 	outer_line_thickness = OUTER_LINE_THICKNESS;
-	grid_size = GRID_SIZE;
+	grid_width = GRID_WIDTH;
+	grid_height = GRID_HEIGHT;
 	grid_spacing = GRID_SPACING;
 
 
@@ -51,44 +52,46 @@ cv::Mat_<float> GridRenderer::tf2cv(tf::Transform tf)
 void GridRenderer::generateGrid()
 {
 
-	double grid_size = this->grid_size;
+	//double grid_size = this->grid_size;
 	double ilt=inner_line_thickness;
 	double olt=outer_line_thickness;
 	double grid_spacing = this->grid_spacing;
-	double min = -(grid_size * grid_spacing / 2);
-	double max = (grid_size * grid_spacing / 2);
+	double minX = -(grid_width * grid_spacing / 2);
+	double maxX = (grid_width * grid_spacing / 2);
+	double minY = -(grid_height * grid_spacing / 2);
+	double maxY = (grid_height * grid_spacing / 2);
 
 	Quad floor;
 	floor.color = _FLOOR;
-	floor.vertices.push_back(cv::Point2f( max + boundary_padding, max + boundary_padding));
-	floor.vertices.push_back(cv::Point2f( min - boundary_padding, max + boundary_padding));
-	floor.vertices.push_back(cv::Point2f( min - boundary_padding, min - boundary_padding));
-	floor.vertices.push_back(cv::Point2f( max + boundary_padding, min - boundary_padding));
+	floor.vertices.push_back(cv::Point2f( maxX + boundary_padding, maxY + boundary_padding));
+	floor.vertices.push_back(cv::Point2f( minX - boundary_padding, maxY + boundary_padding));
+	floor.vertices.push_back(cv::Point2f( minX - boundary_padding, minY - boundary_padding));
+	floor.vertices.push_back(cv::Point2f( maxX + boundary_padding, minY - boundary_padding));
 	grid.push_front(floor);
 
 	ROS_DEBUG_STREAM("front size: " << grid.front().vertices.size());
 
 	int line = 0;
-	for(double x = min; x < max + grid_spacing; x += grid_spacing)
+	for(double x = minX; x < maxX + grid_spacing; x += grid_spacing)
 	{
 		//ROS_DEBUG_STREAM("x: " << x);
 
 		Quad q;
 		q.color = WHITE;
 
-		if(line != 0 && line != grid_size)
+		if(line != 0 && line != grid_width)
 		{
-			q.vertices.push_back(cv::Point2f( x - ilt, max));
-			q.vertices.push_back(cv::Point2f( x + ilt, max));
-			q.vertices.push_back(cv::Point2f( x + ilt, min));
-			q.vertices.push_back(cv::Point2f( x - ilt, min));
+			q.vertices.push_back(cv::Point2f( x - ilt, maxY));
+			q.vertices.push_back(cv::Point2f( x + ilt, maxY));
+			q.vertices.push_back(cv::Point2f( x + ilt, minY));
+			q.vertices.push_back(cv::Point2f( x - ilt, minY));
 		}
 		else
 		{
-			q.vertices.push_back(cv::Point2f( x - olt, max));
-			q.vertices.push_back(cv::Point2f( x + olt, max));
-			q.vertices.push_back(cv::Point2f( x + olt, min));
-			q.vertices.push_back(cv::Point2f( x - olt, min));
+			q.vertices.push_back(cv::Point2f( x - olt, maxY));
+			q.vertices.push_back(cv::Point2f( x + olt, maxY));
+			q.vertices.push_back(cv::Point2f( x + olt, minY));
+			q.vertices.push_back(cv::Point2f( x - olt, minY));
 		}
 
 		ROS_DEBUG_STREAM("front size: " << grid.front().vertices.size());
@@ -99,26 +102,26 @@ void GridRenderer::generateGrid()
 	}
 
 	line = 0;
-	for(double y = min; y < max + grid_spacing; y += grid_spacing)
+	for(double y = minY; y < maxY + grid_spacing; y += grid_spacing)
 	{
 		//ROS_DEBUG_STREAM("x: " << y);
 
 		Quad q;
 		q.color = WHITE;
 
-		if(line != 0 && line != grid_size)
+		if(line != 0 && line != grid_height)
 		{
-			q.vertices.push_back(cv::Point2f(max, y - ilt));
-			q.vertices.push_back(cv::Point2f(max, y + ilt));
-			q.vertices.push_back(cv::Point2f(min, y + ilt));
-			q.vertices.push_back(cv::Point2f(min, y - ilt));
+			q.vertices.push_back(cv::Point2f(maxX, y - ilt));
+			q.vertices.push_back(cv::Point2f(maxX, y + ilt));
+			q.vertices.push_back(cv::Point2f(minX, y + ilt));
+			q.vertices.push_back(cv::Point2f(minX, y - ilt));
 		}
 		else
 		{
-			q.vertices.push_back(cv::Point2f(max, y - olt));
-			q.vertices.push_back(cv::Point2f(max, y + olt));
-			q.vertices.push_back(cv::Point2f(min, y + olt));
-			q.vertices.push_back(cv::Point2f(min, y - olt));
+			q.vertices.push_back(cv::Point2f(maxX, y - olt));
+			q.vertices.push_back(cv::Point2f(maxX, y + olt));
+			q.vertices.push_back(cv::Point2f(minX, y + olt));
+			q.vertices.push_back(cv::Point2f(minX, y - olt));
 		}
 
 		grid.push_front(q);
@@ -132,26 +135,26 @@ void GridRenderer::generateGrid()
 	//generate the grid corners
 
 	int x_line = 0;
-	for(double x = min; x < max + grid_spacing; x += grid_spacing)
+	for(double x = minX; x < maxX + grid_spacing; x += grid_spacing)
 	{
 		int y_line = 0;
-		for(double y = min; y < max + grid_spacing; y += grid_spacing)
+		for(double y = minY; y < maxY + grid_spacing; y += grid_spacing)
 		{
-			if(y_line == 0 || y_line == grid_size)
+			if(y_line == 0 || y_line == grid_height)
 			{
-				if(x_line == 0 || x_line == grid_size)
+				if(x_line == 0 || x_line == grid_width)
 				{
 					if(x_line == 0 && y_line == 0)
 					{
 						grid_corners.push_back(tf::Vector3(x - olt / 2.0, y - olt / 2.0, 0));
 						grid_corners.push_back(tf::Vector3(x + olt / 2.0, y + olt / 2.0, 0));
 					}
-					else if(x_line == grid_size && y_line == 0)
+					else if(x_line == grid_width && y_line == 0)
 					{
 						grid_corners.push_back(tf::Vector3(x + olt / 2.0, y - olt / 2.0, 0));
 						grid_corners.push_back(tf::Vector3(x - olt / 2.0, y + olt / 2.0, 0));
 					}
-					else if(x_line == grid_size && y_line == grid_size)
+					else if(x_line == grid_width && y_line == grid_height)
 					{
 						grid_corners.push_back(tf::Vector3(x + olt / 2.0, y + olt / 2.0, 0));
 						grid_corners.push_back(tf::Vector3(x - olt / 2.0, y - olt / 2.0, 0));
@@ -178,7 +181,7 @@ void GridRenderer::generateGrid()
 			}
 			else
 			{
-				if(x_line == 0 || x_line == grid_size)
+				if(x_line == 0 || x_line == grid_width)
 				{
 					if(x_line == 0) // two to the right
 					{
@@ -258,8 +261,8 @@ tf::Vector3 GridRenderer::project2XYPlane(cv::Mat_<float> dir, bool& behind)
 
 void GridRenderer::renderSourceImage()
 {
-	double width = (grid_size * grid_spacing + 2*boundary_padding) / METRIC_RESOLUTION;
-	double height = width;
+	double width = (grid_width * grid_spacing + 2*boundary_padding) / METRIC_RESOLUTION;
+	double height = (grid_height * grid_spacing + 2*boundary_padding) / METRIC_RESOLUTION ;
 
 	ROS_DEBUG_STREAM("width: " << width);
 
