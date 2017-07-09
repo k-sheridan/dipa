@@ -12,6 +12,8 @@
 
 #define SUPER_DEBUG true
 
+
+//ICP
 #define MAX_ITERATIONS 20
 
 #define CONVERGENCE_DELTA 0.1
@@ -20,15 +22,18 @@
 #define USE_MAX_NORM true
 #define MAX_NORM 25
 
+//minimum initial matches after huber max norm
+#define MINIMUM_INITIAL_MATCHES 4
+
+// maximium per pixel error to be unti deemed outlier
+#define MAX_ICP_ERROR 2.5
+
+//END ICP
+
 //CORNER DETECTION
 #define WHITE_THRESH 140
 //lower this if you have easy corners to detect
 #define INVERSE_IMAGE_SCALE 4.0
-
-//uses fast corner detctor in addition to the line corners
-#define USE_FAST_CORNERS false
-#define FAST_BLUR_SIGMA 2
-#define FAST_THRESHOLD 100
 
 #define CANNY_BLUR_SIGMA 1.2
 #define CANNY_THRESH_1 50
@@ -43,7 +48,19 @@
 //#define MIN_D_THETA 10 * CV_PI/180
 #define PARALLEL_THRESH 0.1
 
-//END CORNER DETECTION
+//END GRID CORNER DETECTION
+
+//PLANAR ODOM
+//fast corner detector for planar odometry
+#define FAST_THRESHOLD 100
+
+#define KLT_MIN_EIGEN 1e-4
+
+#define NUM_FEATURES 50
+
+//END PLANAR ODOM
+
+#define MINIMUM_
 
 #define BOTTOM_CAMERA_TOPIC "/m7/camera/image_rect"
 #define BOTTOM_CAMERA_FRAME "bottomCamera"

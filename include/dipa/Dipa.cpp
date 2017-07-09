@@ -38,7 +38,14 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 	this->image_size = cv::Size(temp.cols / INVERSE_IMAGE_SCALE, temp.rows / INVERSE_IMAGE_SCALE);
 	this->image_K = (1.0 / INVERSE_IMAGE_SCALE) * (cv::Mat_<float>(3, 3) << cam->K.at(0), cam->K.at(1), cam->K.at(2), cam->K.at(3), cam->K.at(4), cam->K.at(5), cam->K.at(6), cam->K.at(7), cam->K.at(8));
 
-	this->detectFeatures(temp);
+	cv::Mat scaled_img;
+	cv::resize(temp, scaled_img, cv::Size(temp.cols / INVERSE_IMAGE_SCALE, temp.rows / INVERSE_IMAGE_SCALE));
+
+	//PLANAR ODOMETRY
+
+
+	//GRID ALIGNMENT
+	this->detectFeatures(scaled_img);
 
 	ROS_ASSERT(this->state.currentPoseSet());
 
@@ -63,11 +70,10 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 
 }
 
-void Dipa::detectFeatures(cv::Mat raw)
+void Dipa::detectFeatures(cv::Mat scaled_img)
 {
 	ROS_DEBUG("detect start");
-	cv::Mat scaled_img, scaled_img_blur;
-	cv::resize(raw, scaled_img, cv::Size(raw.cols / INVERSE_IMAGE_SCALE, raw.rows / INVERSE_IMAGE_SCALE));
+	cv::Mat scaled_img_blur;
 
 	cv::GaussianBlur(scaled_img, scaled_img_blur, cv::Size(0, 0), CANNY_BLUR_SIGMA);
 
@@ -345,6 +351,14 @@ tf::Transform Dipa::runICP(tf::Transform w2c_guess)
 #if USE_MAX_NORM
 		Matches huber = matches.performHuberMaxNorm(MAX_NORM);
 		ROS_DEBUG_STREAM("performed huber max norm size before: " << matches.matches.size() << " now: " << huber.matches.size());
+
+		//check if there are enough matches to reliably align the grid
+		if(huber.matches.size() < MINIMUM_INITIAL_MATCHES)
+		{
+			ROS_WARN("too few matches to reliably align the grid!");
+			return w2c_guess; // return the guess as it is the best answer for now
+		}
+
 		cv::solvePnP(huber.getObjectInOrder(), huber.getMeasurementsInOrder(), this->image_K, cv::noArray(), rvec, tvec, true, cv::SOLVEPNP_ITERATIVE); // use the current guess to help convergence
 #else
 		cv::solvePnP(matches.getObjectInOrder(), matches.getMeasurementsInOrder(), this->image_K, cv::noArray(), rvec, tvec, true, cv::SOLVEPNP_ITERATIVE); // use the current guess to help convergence
@@ -360,6 +374,21 @@ tf::Transform Dipa::runICP(tf::Transform w2c_guess)
 
 		if(fabs(current_sse - last_sse) < CONVERGENCE_DELTA){
 			ROS_DEBUG("PNP-ICP Converged");
+#if USE_MAX_NORM
+			double huber_error = huber.computePerPixelError();
+			ROS_DEBUG_STREAM("huber per point error: " << huber_error);
+			if(huber_error > MAX_ICP_ERROR)
+			{
+				ROS_WARN("final per point error too high!");
+				return w2c_guess;
+			}
+#else
+			if(current_sse > MAX_ICP_ERROR)
+			{
+				return w2c_guess;
+			}
+#endif
+
 #if SUPER_DEBUG
 			cv::Mat blank = cv::Mat::zeros(this->image_size, CV_8UC3);
 			blank = matches.draw(blank, this->detected_corners);

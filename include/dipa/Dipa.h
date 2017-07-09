@@ -48,12 +48,16 @@
 
 #include <dipa/DipaTypes.h>
 
+#include <dipa/planar_odometry/FeatureTracker.h>
+
 class Dipa {
 public:
 
 	tf::TransformListener tf_listener;
 
 	GridRenderer renderer;
+
+	FeatureTracker vo;
 
 	cv::Size image_size;
 	cv::Mat_<float> image_K;
