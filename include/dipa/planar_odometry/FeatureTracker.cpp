@@ -137,9 +137,17 @@ void FeatureTracker::replenishFeatures(cv::Mat img) {
 
 			new_ft.px = fast_kp.at(i).pt;
 
-			new_ft.computeObjectPosition(this->state.currentPose, this->K); // corresponf to a 3d point
+			bool valid = new_ft.computeObjectPosition(this->state.currentPose, this->K); // corresponf to a 3d point
 
-			this->state.features.push_back(new_ft);
+			if(valid) // feature is valid add it
+			{
+				this->state.features.push_back(new_ft);
+			}
+			else //feature is aff the grid remove it
+			{
+				needed++; // we still need a new feature
+				continue;
+			}
 
 		}
 	}
