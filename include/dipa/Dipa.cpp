@@ -55,6 +55,7 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 	bool good_vo = false;
 	if(this->vo.state.features.size() > 0)
 	{
+		ROS_DEBUG("start vo");
 		//flow the features
 		this->vo.updateFeatures(scaled_img);
 
@@ -63,6 +64,8 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 			//compute the new pose
 			good_vo = this->vo.computePose(vo_error);
 		}
+
+		ROS_DEBUG("end vo");
 	}
 
 	//get more features

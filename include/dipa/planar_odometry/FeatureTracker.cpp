@@ -29,8 +29,12 @@ void FeatureTracker::updateFeatures(cv::Mat img)
 	std::vector<uchar> status; // status vector for each point
 	cv::Mat error; // error vector for each point
 
+	ROS_DEBUG("before klt");
+
 	cv::calcOpticalFlowPyrLK(this->state.currentImg, img, oldPoints, newPoints, status, error, cv::Size(21, 21), 3,
 			cv::TermCriteria(cv::TermCriteria::COUNT+cv::TermCriteria::EPS, 30, 0.01), 0, KLT_MIN_EIGEN);
+
+	ROS_DEBUG("after klt");
 
 	std::vector<Feature> flowedFeatures;
 
@@ -63,7 +67,7 @@ void FeatureTracker::updateFeatures(cv::Mat img)
 
 bool FeatureTracker::computePose(double& perPixelError)
 {
-
+	return true;
 }
 
 void FeatureTracker::updatePose(tf::Transform w2c)
@@ -100,6 +104,8 @@ void FeatureTracker::replenishFeatures(cv::Mat img)
 
 		}
 	}
+
+	this->state.currentImg = img;
 
 #if SUPER_DEBUG
 
