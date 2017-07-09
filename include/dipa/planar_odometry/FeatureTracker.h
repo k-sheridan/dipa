@@ -18,6 +18,12 @@
 #include <opencv2/highgui/highgui_c.h>
 #include <opencv2/calib3d.hpp>
 
+#include <opencv2/features2d.hpp>
+#include "opencv2/core/core.hpp"
+#include "opencv2/features2d/features2d.hpp"
+#include "opencv2/xfeatures2d.hpp"
+#include "opencv2/video.hpp"
+
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/message_filter.h>
 #include <tf2_ros/transform_listener.h>
@@ -26,10 +32,10 @@
 #include <tf/tf.h>
 #include <tf/tfMessage.h>
 
+#include <dipa/DipaParams.h>
+
 class FeatureTracker {
 public:
-
-	cv::Mat_<float> K;
 
 	struct Feature{
 		cv::Point2f px;
@@ -59,6 +65,8 @@ public:
 	struct VOState{
 		std::vector<Feature> features;
 
+		cv::Mat currentImg; // the image that the features are currently in
+
 		tf::Transform currentPose; // w2c transform
 
 		std::vector<cv::Point2d> getPixelsInOrder(){
@@ -67,6 +75,17 @@ public:
 			for(auto e : features)
 			{
 				pixels.push_back(cv::Point2d(e.px.x, e.px.y));
+			}
+
+			return pixels;
+		}
+
+		std::vector<cv::Point2f> getPixels2fInOrder(){
+			std::vector<cv::Point2f> pixels;
+
+			for(auto e : features)
+			{
+				pixels.push_back(e.px);
 			}
 
 			return pixels;
@@ -117,14 +136,19 @@ public:
 		}
 	};
 
+	cv::Mat_<float> K;
+	VOState state;
+
 	FeatureTracker();
 	virtual ~FeatureTracker();
 
 	void updateFeatures(cv::Mat img);
 
-	tf::Transform computePose(double& perPixelError);
+	bool computePose(double& perPixelError);
 
 	void updatePose(tf::Transform w2c);
+
+	void replenishFeatures(cv::Mat img);
 };
 
 #endif /* DIPA_INCLUDE_DIPA_PLANAR_ODOMETRY_FEATURETRACKER_H_ */
