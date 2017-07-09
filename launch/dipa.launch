@@ -4,6 +4,6 @@
 	</node>
 	
 	<node pkg="tf" type="static_transform_publisher" name="base_camera" 
-			args="0 0 0 0 0 0 /base_link /m7/camera 10"/> 
+			args="0 0 0 0 0 0 /base_link /bottom_camera 10"/> 
 
 </launch>

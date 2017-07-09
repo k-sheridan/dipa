@@ -26,7 +26,7 @@
 #define MINIMUM_INITIAL_MATCHES 4
 
 // maximium per pixel error to be unti deemed outlier
-#define MAX_ICP_ERROR 1.0
+#define MAX_ICP_ERROR 1.5
 
 //END ICP
 
@@ -67,7 +67,7 @@
 #define ODOM_TOPIC "/dipa/odom"
 
 #define BOTTOM_CAMERA_TOPIC "/m7/camera/image_rect"
-#define CAMERA_FRAME "bottomCamera"
+#define CAMERA_FRAME "bottom_camera"
 
 #define BASE_FRAME "base_link"
 

@@ -18,16 +18,26 @@ Dipa::Dipa(tf::Transform initial_world_to_base_transform, bool debug) {
 	this->odom_pub = nh.advertise<nav_msgs::Odometry>(ODOM_TOPIC, 1);
 
 	tf::StampedTransform b2c;
-	try {
-		tf_listener.lookupTransform(BASE_FRAME, CAMERA_FRAME,
-				ros::Time(0), b2c);
-	} catch (tf::TransformException& e) {
-		ROS_WARN_STREAM(e.what());
+
+	ROS_INFO_STREAM("WAITING FOR TANSFORM FROM " << BASE_FRAME << " TO " << CAMERA_FRAME);
+	if(tf_listener.waitForTransform(BASE_FRAME, CAMERA_FRAME, ros::Time(0), ros::Duration(2))){
+		try {
+			tf_listener.lookupTransform(BASE_FRAME, CAMERA_FRAME,
+					ros::Time(0), b2c);
+		} catch (tf::TransformException& e) {
+			ROS_WARN_STREAM(e.what());
+		}
+	}
+	else
+	{
+		ROS_FATAL("COULD NOT GET TRANSFORM");
+		ros::shutdown();
+		return;
 	}
 
 	//set the initial guess to the passed in transform
 	//this->state.updatePose(initial_world_to_base_transform, ros::Time::now()); // this will cause a problem with datasets
-	this->state.updatePose(initial_world_to_base_transform * b2c, ros::Time(0));
+	this->state.updatePose(initial_world_to_base_transform, ros::Time(0));
 
 	//initialize vo with the guess
 	//TODO transform to the camera
@@ -80,8 +90,16 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 			//compute the new pose
 			good_vo = this->vo.computePose(vo_error);
 		}
+		else
+		{
+			ROS_WARN("the visual odometry algorithm doesnt have enough valid features to compute motion!");
+		}
 
 		ROS_DEBUG("end vo");
+	}
+	else
+	{
+		ROS_WARN("visual odometry has no valid features");
 	}
 
 	//get more features
@@ -90,6 +108,7 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 	// update the current pose estimate with this vo estimate if it is good
 	if(good_vo)
 	{
+		ROS_DEBUG("had good vo estimate: updating the base pose");
 		this->state.updatePose(this->vo.state.currentPose * c2b, img->header.stamp);
 	}
 
@@ -100,12 +119,12 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 
 	ROS_ASSERT(this->state.currentPoseSet());
 
-	if(this->state.getCurrentBestPoseStamp() != ros::Time::now())
+	/*if(this->state.getCurrentBestPoseStamp() != ros::Time::now())
 	{
 		ROS_ASSERT(img->header.stamp > this->state.getCurrentBestPoseStamp());
-	}
+	}*/
 
-	//TODO transform the initial base transform int othe camera coordinate frame
+
 	bool icp_good = false;
 	double icp_ppe = -1;
 	tf::Transform w2c_aligned = this->runICP(this->vo.state.currentPose, icp_ppe, icp_good);
@@ -121,6 +140,10 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 
 		//manually replace the dipa state's current estimate
 		this->state.manualPoseUpdate(w2c_aligned * c2b, img->header.stamp);
+	}
+	else
+	{
+		ROS_INFO("GRID ALIGNMENT FAILED");
 	}
 
 

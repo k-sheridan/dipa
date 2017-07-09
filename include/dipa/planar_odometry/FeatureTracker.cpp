@@ -64,6 +64,7 @@ void FeatureTracker::updateFeatures(cv::Mat img) {
 
 bool FeatureTracker::computePose(double& perPixelError) {
 
+	ROS_DEBUG("computing motion");
 	ROS_ASSERT(this->state.features.size() >= 4);
 
 	std::vector<cv::Point2d> img_pts;
@@ -82,11 +83,15 @@ bool FeatureTracker::computePose(double& perPixelError) {
 	//get the updated transform back
 	this->state.currentPose = this->rvecAndtvec2tf(tvec, rvec).inverse(); // invert back to w2c
 
+	ROS_DEBUG("done computing motion");
+
 	return true;
 }
 
 void FeatureTracker::updatePose(tf::Transform w2c) {
 	this->state.currentPose = w2c; // set the new pose
+
+	ROS_INFO("GRID HAS ALIGNED: UPDATING THE VO POSE AND OBJECT POSITIONS TO CORRECT FOR DRIFT" );
 
 	this->state.updateObjectPositions(this->K); // update the object positions to eliminate the drift
 }
