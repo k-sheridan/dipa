@@ -516,15 +516,47 @@ tf::Transform Dipa::runICP(tf::Transform w2c_guess, double& ppe, bool& pass)
 
 	ROS_DEBUG("end optim");
 
-	pass = true;
+	ROS_ASSERT(USE_MAX_NORM);
+
+	Matches huber = matches.performHuberMaxNorm(MAX_NORM);
+
+	if(huber.matches.size() < MINIMUM_FINAL_MATCHES)
+	{
+		ROS_WARN_STREAM("huber matches too low: " << huber.matches.size());
+		pass = false;
+		return w2c_guess;
+	}
+
+	double huberRatio = (double)huber.matches.size() / (double)matches.matches.size();
+
+	if(huberRatio < MINIMUM_HUBER_RATIO)
+	{
+		ROS_WARN_STREAM("huber ratio too low at: " << huberRatio);
+		pass = false;
+		return w2c_guess;
+	}
 
 	//if error has not been set calculate it
-	if(ppe = -1)
+	//this means that icp did not converge
+	if(ppe == -1)
 	{
 		ROS_WARN_STREAM("used maximum icp iters, calculating ppe with huber!");
 
-		ppe = matches.performHuberMaxNorm(MAX_NORM).computePerPixelError();
+		ppe = huber.computePerPixelError();
+
 	}
+
+	//finally check if the error is too high
+	if(ppe > MAX_ICP_ERROR)
+	{
+		ROS_WARN_STREAM("huber ppe too high at: " << ppe);
+		pass = false;
+		return w2c_guess;
+	}
+
+	//all outlier tests have passed
+
+	pass = true;
 
 	return this->rvecAndtvec2tf(tvec, rvec).inverse(); // return the w2c guess
 

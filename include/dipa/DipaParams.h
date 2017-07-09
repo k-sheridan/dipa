@@ -24,6 +24,9 @@
 
 //minimum initial matches after huber max norm
 #define MINIMUM_INITIAL_MATCHES 4
+//minimum huber matches after icp converge
+#define MINIMUM_FINAL_MATCHES 10
+#define MINIMUM_HUBER_RATIO 0.5
 
 // maximium per pixel error to be unti deemed outlier
 #define MAX_ICP_ERROR 1.5
