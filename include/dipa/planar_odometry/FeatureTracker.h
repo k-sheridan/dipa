@@ -149,6 +149,15 @@ public:
 	void updatePose(tf::Transform w2c);
 
 	void replenishFeatures(cv::Mat img);
+
+	cv::Mat draw(cv::Mat in)
+	{
+		for(auto e : this->state.features)
+		{
+			cv::drawMarker(in, e.px, cv::Scalar(255, 0, 0));
+		}
+		return in;
+	}
 };
 
 #endif /* DIPA_INCLUDE_DIPA_PLANAR_ODOMETRY_FEATURETRACKER_H_ */

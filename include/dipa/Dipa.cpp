@@ -21,6 +21,10 @@ Dipa::Dipa(tf::Transform initial_world_to_base_transform, bool debug) {
 	//this->state.updatePose(initial_world_to_base_transform, ros::Time::now()); // this will cause a problem with datasets
 	this->state.updatePose(initial_world_to_base_transform, ros::Time(0));
 
+	//initialize vo with the guess
+	//TODO transform to the camera
+	this->vo.updatePose(initial_world_to_base_transform);
+
 	if(!debug)
 	{
 		ros::spin(); // go into the main loop;
@@ -47,6 +51,22 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 	cv::resize(temp, scaled_img, cv::Size(temp.cols / INVERSE_IMAGE_SCALE, temp.rows / INVERSE_IMAGE_SCALE));
 
 	//PLANAR ODOMETRY
+	double vo_error = -1; //per pixel odometry error
+	bool good_vo = false;
+	if(this->vo.state.features.size() > 0)
+	{
+		//flow the features
+		this->vo.updateFeatures(scaled_img);
+
+		if(this->vo.state.features.size() >= MINIMUM_TRACKABLE_FEATURES)
+		{
+			//compute the new pose
+			good_vo = this->vo.computePose(vo_error);
+		}
+	}
+
+	//get more features
+	this->vo.replenishFeatures(scaled_img);
 
 
 	//GRID ALIGNMENT
@@ -71,6 +91,8 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 		// simply run icp with current best guess
 		this->state.updatePose(this->runICP(this->state.getCurrentBestPose()), img->header.stamp);
 	}
+
+	//IF HAD GOOD GRID ALIGNMENT UPDATE THE VO
 
 
 	//TODO check if tracking has been lost

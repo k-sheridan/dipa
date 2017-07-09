@@ -18,7 +18,11 @@ FeatureTracker::~FeatureTracker() {
 
 void FeatureTracker::updateFeatures(cv::Mat img)
 {
+
 	std::vector<cv::Point2f> oldPoints = this->state.getPixels2fInOrder();
+
+	ROS_ASSERT(oldPoints.size() > 0);
+
 	//ROS_DEBUG_STREAM_ONCE("got " << oldPoints.size() << " old point2fs from the oldframe which has " << oldFrame.features.size() << " features");
 	std::vector<cv::Point2f> newPoints;
 
@@ -51,6 +55,8 @@ void FeatureTracker::updateFeatures(cv::Mat img)
 
 	this->state.features = flowedFeatures;
 
+	this->state.currentImg = img; // the new image is now the old image
+
 	ROS_DEBUG_STREAM("VO LOST " << lostFeatures << "FEATURES");
 
 }
@@ -62,7 +68,9 @@ bool FeatureTracker::computePose(double& perPixelError)
 
 void FeatureTracker::updatePose(tf::Transform w2c)
 {
+	this->state.currentPose = w2c; // set the new pose
 
+	this->state.updateObjectPositions(this->K); // update the object positions to eliminate the drift
 }
 
 /*
@@ -92,4 +100,15 @@ void FeatureTracker::replenishFeatures(cv::Mat img)
 
 		}
 	}
+
+#if SUPER_DEBUG
+
+	cv::Mat copy = img.clone();
+
+	copy = this->draw(copy);
+
+	cv::imshow("vo", copy);
+	cv::waitKey(30);
+
+#endif
 }
