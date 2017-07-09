@@ -150,7 +150,10 @@ int main(int argc, char **argv) {
 	dipa.image_K = (K);
 	dipa.image_size = (cv::Size(600, 600));
 
-	dipa.runICP(w2c1);
+	bool pass;
+	double ppe;
+
+	dipa.runICP(w2c1, ppe, pass);
 
 	w2c1 = w2c1 * motion;
 
@@ -172,10 +175,10 @@ int main(int argc, char **argv) {
 
 		if(dipa.state.twistSet() && dipa.state.currentPoseSet())
 		{
-			dipa.state.updatePose(dipa.runICP(dipa.state.predict(start)), start);
+			dipa.state.updatePose(dipa.runICP(dipa.state.predict(start), ppe, pass), start);
 		}
 		else{
-		dipa.state.updatePose(dipa.runICP(dipa.state.getCurrentBestPose()), start);
+		dipa.state.updatePose(dipa.runICP(dipa.state.getCurrentBestPose(), ppe, pass), start);
 		}
 		w2c1 = w2c1 * motion;
 

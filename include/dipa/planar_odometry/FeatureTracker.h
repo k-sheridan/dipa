@@ -146,6 +146,10 @@ public:
 
 	void replenishFeatures(cv::Mat img);
 
+	void tf2rvecAndtvec(tf::Transform tf, cv::Mat& tvec, cv::Mat& rvec);
+
+	tf::Transform rvecAndtvec2tf(cv::Mat tvec, cv::Mat rvec);
+
 	cv::Mat draw(cv::Mat in)
 	{
 		for(auto e : this->state.features)

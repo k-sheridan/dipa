@@ -191,6 +191,13 @@ public:
 		last_pose_set = false;
 	}
 
+	void manualPoseUpdate(tf::Transform trans, ros::Time t)
+	{
+		current_best_t = t;
+		current_best_w2b = trans;
+		current_pose_set = true;
+	}
+
 	void updatePose(tf::Transform trans, ros::Time t) {
 		if (current_pose_set) // we can now set the last pose
 		{

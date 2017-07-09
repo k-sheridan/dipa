@@ -17,13 +17,21 @@ Dipa::Dipa(tf::Transform initial_world_to_base_transform, bool debug) {
 
 	this->odom_pub = nh.advertise<nav_msgs::Odometry>(ODOM_TOPIC, 1);
 
+	tf::StampedTransform b2c;
+	try {
+		tf_listener.lookupTransform(BASE_FRAME, CAMERA_FRAME,
+				ros::Time(0), b2c);
+	} catch (tf::TransformException& e) {
+		ROS_WARN_STREAM(e.what());
+	}
+
 	//set the initial guess to the passed in transform
 	//this->state.updatePose(initial_world_to_base_transform, ros::Time::now()); // this will cause a problem with datasets
-	this->state.updatePose(initial_world_to_base_transform, ros::Time(0));
+	this->state.updatePose(initial_world_to_base_transform * b2c, ros::Time(0));
 
 	//initialize vo with the guess
 	//TODO transform to the camera
-	this->vo.updatePose(initial_world_to_base_transform);
+	this->vo.updatePose(initial_world_to_base_transform * b2c);
 
 	if(!debug)
 	{
@@ -38,6 +46,14 @@ Dipa::~Dipa() {
 void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs::CameraInfoConstPtr& cam)
 //void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img)
 {
+	tf::StampedTransform c2b;
+	try {
+		tf_listener.lookupTransform(CAMERA_FRAME, BASE_FRAME,
+				ros::Time(0), c2b);
+	} catch (tf::TransformException& e) {
+		ROS_WARN_STREAM(e.what());
+	}
+
 	cv::Mat temp = cv_bridge::toCvShare(img, img->encoding)->image.clone();
 
 	// scale the image parameters for the renderer
@@ -71,6 +87,13 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 	//get more features
 	this->vo.replenishFeatures(scaled_img);
 
+	// update the current pose estimate with this vo estimate if it is good
+	if(good_vo)
+	{
+		this->state.updatePose(this->vo.state.currentPose * c2b, img->header.stamp);
+	}
+
+
 
 	//GRID ALIGNMENT
 	this->detectFeatures(scaled_img);
@@ -83,19 +106,22 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 	}
 
 	//TODO transform the initial base transform int othe camera coordinate frame
-	if(this->state.twistSet())
-	{
-		// run the icp algorithm with predicted pose
-		//this->state.updatePose(this->runICP(this->state.predict(img->header.stamp)), img->header.stamp);
-		this->state.updatePose(this->runICP(this->state.getCurrentBestPose()), img->header.stamp);
-	}
-	else
-	{
-		// simply run icp with current best guess
-		this->state.updatePose(this->runICP(this->state.getCurrentBestPose()), img->header.stamp);
-	}
+	bool icp_good = false;
+	double icp_ppe = -1;
+	tf::Transform w2c_aligned = this->runICP(this->vo.state.currentPose, icp_ppe, icp_good);
+
 
 	//IF HAD GOOD GRID ALIGNMENT UPDATE THE VO
+	if(icp_good)
+	{
+		ROS_INFO_STREAM("GOOD GRID ALIGNMENT WITH ERROR: " << icp_ppe);
+		ROS_ASSERT(icp_ppe != -1);
+
+		this->vo.updatePose(w2c_aligned); // update vo's pose estimate and its pixel depth's
+
+		//manually replace the dipa state's current estimate
+		this->state.manualPoseUpdate(w2c_aligned * c2b, img->header.stamp);
+	}
 
 
 	//TODO check if tracking has been lost
@@ -346,8 +372,11 @@ tf::Transform Dipa::rvecAndtvec2tf(cv::Mat tvec, cv::Mat rvec){
  *
  * returns the optimized pose which fits the corner model the best
  */
-tf::Transform Dipa::runICP(tf::Transform w2c_guess)
+tf::Transform Dipa::runICP(tf::Transform w2c_guess, double& ppe, bool& pass)
 {
+	// set the ppe to -1 to tell if it has been set
+	ppe = -1;
+
 	//set up the renderer with the current K and size
 	this->renderer.setSize(this->image_size);
 	this->renderer.setIntrinsic(this->image_K);
@@ -389,6 +418,9 @@ tf::Transform Dipa::runICP(tf::Transform w2c_guess)
 		if(huber.matches.size() < MINIMUM_INITIAL_MATCHES)
 		{
 			ROS_WARN("too few matches to reliably align the grid!");
+
+			pass = false;
+
 			return w2c_guess; // return the guess as it is the best answer for now
 		}
 
@@ -409,15 +441,26 @@ tf::Transform Dipa::runICP(tf::Transform w2c_guess)
 			ROS_DEBUG("PNP-ICP Converged");
 #if USE_MAX_NORM
 			double huber_error = huber.computePerPixelError();
+
+			ppe = huber_error;
+
 			ROS_DEBUG_STREAM("huber per point error: " << huber_error);
 			if(huber_error > MAX_ICP_ERROR)
 			{
 				ROS_WARN("final per point error too high!");
+
+				pass = false;
+
 				return w2c_guess;
 			}
 #else
+			ppe = currencurrent_sse;
+
 			if(current_sse > MAX_ICP_ERROR)
 			{
+
+				pass = false;
+
 				return w2c_guess;
 			}
 #endif
@@ -449,6 +492,16 @@ tf::Transform Dipa::runICP(tf::Transform w2c_guess)
 	}
 
 	ROS_DEBUG("end optim");
+
+	pass = true;
+
+	//if error has not been set calculate it
+	if(ppe = -1)
+	{
+		ROS_WARN_STREAM("used maximum icp iters, calculating ppe with huber!");
+
+		ppe = matches.performHuberMaxNorm(MAX_NORM).computePerPixelError();
+	}
 
 	return this->rvecAndtvec2tf(tvec, rvec).inverse(); // return the w2c guess
 

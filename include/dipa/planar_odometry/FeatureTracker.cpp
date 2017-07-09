@@ -16,8 +16,7 @@ FeatureTracker::~FeatureTracker() {
 	// TODO Auto-generated destructor stub
 }
 
-void FeatureTracker::updateFeatures(cv::Mat img)
-{
+void FeatureTracker::updateFeatures(cv::Mat img) {
 
 	std::vector<cv::Point2f> oldPoints = this->state.getPixels2fInOrder();
 
@@ -31,8 +30,10 @@ void FeatureTracker::updateFeatures(cv::Mat img)
 
 	ROS_DEBUG("before klt");
 
-	cv::calcOpticalFlowPyrLK(this->state.currentImg, img, oldPoints, newPoints, status, error, cv::Size(21, 21), 3,
-			cv::TermCriteria(cv::TermCriteria::COUNT+cv::TermCriteria::EPS, 30, 0.01), 0, KLT_MIN_EIGEN);
+	cv::calcOpticalFlowPyrLK(this->state.currentImg, img, oldPoints, newPoints,
+			status, error, cv::Size(21, 21), 3,
+			cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS,
+					30, 0.01), 0, KLT_MIN_EIGEN);
 
 	ROS_DEBUG("after klt");
 
@@ -40,19 +41,15 @@ void FeatureTracker::updateFeatures(cv::Mat img)
 
 	int lostFeatures = 0;
 
-	for(int i = 0; i < status.size(); i++)
-	{
-		if(status.at(i) == 1)
-		{
+	for (int i = 0; i < status.size(); i++) {
+		if (status.at(i) == 1) {
 			Feature updated_feature = this->state.features.at(i);
 
 			updated_feature.px = newPoints.at(i);
 
 			flowedFeatures.push_back(updated_feature);
 
-		}
-		else
-		{
+		} else {
 			lostFeatures++;
 		}
 	}
@@ -65,13 +62,30 @@ void FeatureTracker::updateFeatures(cv::Mat img)
 
 }
 
-bool FeatureTracker::computePose(double& perPixelError)
-{
+bool FeatureTracker::computePose(double& perPixelError) {
+
+	ROS_ASSERT(this->state.features.size() >= 4);
+
+	std::vector<cv::Point2d> img_pts;
+	std::vector<cv::Point3d> obj_pts;
+
+	img_pts = this->state.getPixelsInOrder();
+	obj_pts = this->state.getObjectsInOrder();
+
+	cv::Mat rvec, tvec;
+
+	//set the initial inv w2c guess
+	this->tf2rvecAndtvec(this->state.currentPose.inverse(), tvec, rvec);
+
+	cv::solvePnP(obj_pts, img_pts, this->K, cv::noArray(), rvec, tvec, true, cv::SOLVEPNP_ITERATIVE);
+
+	//get the updated transform back
+	this->state.currentPose = this->rvecAndtvec2tf(tvec, rvec).inverse(); // invert back to w2c
+
 	return true;
 }
 
-void FeatureTracker::updatePose(tf::Transform w2c)
-{
+void FeatureTracker::updatePose(tf::Transform w2c) {
 	this->state.currentPose = w2c; // set the new pose
 
 	this->state.updateObjectPositions(this->K); // update the object positions to eliminate the drift
@@ -80,20 +94,40 @@ void FeatureTracker::updatePose(tf::Transform w2c)
 /*
  * get more features after updating the pose
  */
-void FeatureTracker::replenishFeatures(cv::Mat img)
-{
+void FeatureTracker::replenishFeatures(cv::Mat img) {
 	//add more features if needed
-	if(this->state.features.size() < NUM_FEATURES)
-	{
+	if (this->state.features.size() < NUM_FEATURES) {
 		std::vector<cv::KeyPoint> fast_kp;
 		cv::FAST(img, fast_kp, FAST_THRESHOLD, true);
 
 		int needed = NUM_FEATURES - this->state.features.size();
 
-		//TODO check if feature already exists
+		/*cv::flann::Index tree;
 
-		for(int i = 0; i < needed && i < fast_kp.size(); i++)
-		{
+		if (this->state.features.size() > 0) {
+			std::vector<cv::Point2f> prev = this->state.getPixels2fInOrder();
+			tree = cv::flann::Index(cv::Mat(prev).reshape(1),
+					cv::flann::KDTreeIndexParams());
+		}*/
+
+		for (int i = 0; i < needed && i < fast_kp.size(); i++) {
+			/*if (this->state.features.size() > 0) {
+				//make sure that this corner is not too close to any old corners
+				std::vector<float> query;
+				query.push_back(fast_kp.at(i).pt.x);
+				query.push_back(fast_kp.at(i).pt.y);
+
+				std::vector<int> indexes;
+				std::vector<float> dists;
+
+				tree.knnSearch(query, indexes, dists, 1);
+
+				if (dists.front() < MIN_NEW_FEATURE_DIST) // if this featrue is too close to a already tracked feature skip it
+				{
+					continue;
+				}
+			}*/
+
 			Feature new_ft;
 
 			new_ft.px = fast_kp.at(i).pt;
@@ -117,4 +151,43 @@ void FeatureTracker::replenishFeatures(cv::Mat img)
 	cv::waitKey(30);
 
 #endif
+}
+
+
+void FeatureTracker::tf2rvecAndtvec(tf::Transform tf, cv::Mat& tvec, cv::Mat& rvec){
+	cv::Mat_<double> R = (cv::Mat_<double>(3, 3) << tf.getBasis().getRow(0).x(), tf.getBasis().getRow(0).y(), tf.getBasis().getRow(0).z(),
+			tf.getBasis().getRow(1).x(), tf.getBasis().getRow(1).y(), tf.getBasis().getRow(1).z(),
+			tf.getBasis().getRow(2).x(), tf.getBasis().getRow(2).y(), tf.getBasis().getRow(2).z());
+
+	//ROS_DEBUG("setting up tvec and rvec");
+
+	cv::Rodrigues(R, rvec);
+
+	tvec = (cv::Mat_<double>(3, 1) << tf.getOrigin().x(), tf.getOrigin().y(), tf.getOrigin().z());
+
+	//ROS_DEBUG_STREAM("tvec: " << tvec << "\nrvec: " << rvec);
+}
+
+tf::Transform FeatureTracker::rvecAndtvec2tf(cv::Mat tvec, cv::Mat rvec){
+	//ROS_DEBUG("rvectvec to tf");
+	cv::Mat_<double> rot;
+	cv::Rodrigues(rvec, rot);
+	/*ROS_DEBUG_STREAM("rot: " << rot);
+		ROS_DEBUG_STREAM("rvec: " << rvec);*/
+	//ROS_DEBUG_STREAM("tvec " << tvec);
+
+	tf::Transform trans;
+
+	trans.getBasis().setValue(rot(0), rot(1), rot(2), rot(3), rot(4), rot(5), rot(6), rot(7), rot(8));
+	trans.setOrigin(tf::Vector3(tvec.at<double>(0), tvec.at<double>(1), tvec.at<double>(2)));
+
+	//ROS_DEBUG_STREAM("rot: " << trans.getRotation().w() << ", " << trans.getRotation().x() << ", " << trans.getRotation().y() << ", " << trans.getRotation().z());
+	/*double x, y, z;
+		trans.getBasis().getRPY(x, y, z);
+		ROS_DEBUG_STREAM("tf rvec " << x <<", "<<y<<", "<<z);*/
+	//ROS_DEBUG_STREAM(trans.getOrigin().x() << ", " << trans.getOrigin().y() << ", " << trans.getOrigin().z());
+
+	//ROS_DEBUG("finished");
+
+	return trans;
 }
