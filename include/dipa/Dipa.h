@@ -42,6 +42,8 @@
 #include <sstream>
 #include <cv_bridge/cv_bridge.h>
 
+#include <nav_msgs/Odometry.h>
+
 #include <dipa/DipaParams.h>
 
 #include <dipa/GridRenderer.h>
@@ -65,6 +67,8 @@ public:
 	std::vector<cv::Point2f> detected_corners;
 
 	DipaState state;
+
+	ros::Publisher odom_pub;
 
 	//cv::flann::Index* kdtree;
 
@@ -91,6 +95,8 @@ public:
 	tf::Transform rvecAndtvec2tf(cv::Mat tvec, cv::Mat rvec);
 
 	tf::Transform runICP(tf::Transform w2c_guess);
+
+	void publishOdometry();
 };
 
 #endif /* DIPA_INCLUDE_DIPA_DIPA_H_ */

@@ -29,13 +29,15 @@
 class FeatureTracker {
 public:
 
+	cv::Mat_<float> K;
+
 	struct Feature{
 		cv::Point2f px;
 		tf::Vector3 obj;
 
-		bool computeObjectPosition(tf::Transform w2c)
+		bool computeObjectPosition(tf::Transform w2c, cv::Mat_<float> K)
 		{
-			tf::Vector3 pixel = tf::Vector3(px.x, px.y, 1.0);
+			tf::Vector3 pixel = tf::Vector3((px.x - K(2)) / K(0), (px.y - K(5)) / K(4), 1.0);
 
 			tf::Vector3 dir = w2c * pixel - w2c.getOrigin();
 
@@ -85,11 +87,11 @@ public:
 		 * uses the current pose and current pixels to determine the 3d position of the objects
 		 * assumes that all pixels lie on a plane
 		 */
-		void updateObjectPositions()
+		void updateObjectPositions(cv::Mat_<float> K)
 		{
 			for(int i = 0; i < features.size(); i++)
 			{
-				tf::Vector3 pixel = tf::Vector3(features.at(i).px.x, features.at(i).px.y, 1.0);
+				tf::Vector3 pixel = tf::Vector3((features.at(i).px.x - K(2)) / K(0), (features.at(i).px.y - K(5)) / K(4), 1.0);
 
 				tf::Vector3 dir = currentPose * pixel - currentPose.getOrigin();
 
@@ -118,7 +120,7 @@ public:
 	FeatureTracker();
 	virtual ~FeatureTracker();
 
-	void updateFeatures();
+	void updateFeatures(cv::Mat img);
 
 	tf::Transform computePose(double& perPixelError);
 

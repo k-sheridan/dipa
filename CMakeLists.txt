@@ -7,6 +7,7 @@ project(dipa)
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   geometry_msgs
+  nav_msgs
   image_transport
   roscpp
   sensor_msgs

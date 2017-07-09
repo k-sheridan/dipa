@@ -15,6 +15,8 @@ Dipa::Dipa(tf::Transform initial_world_to_base_transform, bool debug) {
 	image_transport::CameraSubscriber bottom_cam_sub = it.subscribeCamera(BOTTOM_CAMERA_TOPIC, 2, &Dipa::bottomCamCb, this);
 
 
+	this->odom_pub = nh.advertise<nav_msgs::Odometry>(ODOM_TOPIC, 1);
+
 	//set the initial guess to the passed in transform
 	//this->state.updatePose(initial_world_to_base_transform, ros::Time::now()); // this will cause a problem with datasets
 	this->state.updatePose(initial_world_to_base_transform, ros::Time(0));
@@ -37,6 +39,9 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 	// scale the image parameters for the renderer
 	this->image_size = cv::Size(temp.cols / INVERSE_IMAGE_SCALE, temp.rows / INVERSE_IMAGE_SCALE);
 	this->image_K = (1.0 / INVERSE_IMAGE_SCALE) * (cv::Mat_<float>(3, 3) << cam->K.at(0), cam->K.at(1), cam->K.at(2), cam->K.at(3), cam->K.at(4), cam->K.at(5), cam->K.at(6), cam->K.at(7), cam->K.at(8));
+
+	//set the vo K
+	this->vo.K = this->image_K;
 
 	cv::Mat scaled_img;
 	cv::resize(temp, scaled_img, cv::Size(temp.cols / INVERSE_IMAGE_SCALE, temp.rows / INVERSE_IMAGE_SCALE));
@@ -67,6 +72,9 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 		this->state.updatePose(this->runICP(this->state.getCurrentBestPose()), img->header.stamp);
 	}
 
+
+	//TODO check if tracking has been lost
+	this->publishOdometry();
 
 }
 
@@ -419,4 +427,42 @@ tf::Transform Dipa::runICP(tf::Transform w2c_guess)
 
 	return this->rvecAndtvec2tf(tvec, rvec).inverse(); // return the w2c guess
 
+}
+
+
+void Dipa::publishOdometry()
+{
+
+	if(!this->state.twistSet() || !this->state.currentPoseSet())
+	{
+		ROS_DEBUG("NOT READY TO PUBLISH!");
+		return;
+	}
+
+	nav_msgs::Odometry msg;
+
+	msg.child_frame_id = BASE_FRAME;
+	msg.header.stamp = this->state.getCurrentBestPoseStamp();
+	msg.header.frame_id = WORLD_FRAME;
+
+	tf::Quaternion q = this->state.getCurrentBestPose().getRotation();
+
+	msg.pose.pose.orientation.w = q.w();
+	msg.pose.pose.orientation.x = q.x();
+	msg.pose.pose.orientation.y = q.y();
+	msg.pose.pose.orientation.z = q.z();
+
+	msg.pose.pose.position.x = this->state.getCurrentBestPose().getOrigin().x();
+	msg.pose.pose.position.y = this->state.getCurrentBestPose().getOrigin().y();
+	msg.pose.pose.position.z = this->state.getCurrentBestPose().getOrigin().z();
+
+	msg.twist.twist.angular.x = this->state.getBaseFrameOmega().x();
+	msg.twist.twist.angular.y = this->state.getBaseFrameOmega().y();
+	msg.twist.twist.angular.z = this->state.getBaseFrameOmega().z();
+
+	msg.twist.twist.linear.x = this->state.getBaseFrameVelocity().x();
+	msg.twist.twist.linear.y = this->state.getBaseFrameVelocity().y();
+	msg.twist.twist.linear.z = this->state.getBaseFrameVelocity().z();
+
+	this->odom_pub.publish(msg);
 }

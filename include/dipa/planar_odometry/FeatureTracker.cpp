@@ -16,7 +16,11 @@ FeatureTracker::~FeatureTracker() {
 	// TODO Auto-generated destructor stub
 }
 
-void FeatureTracker::updateFeatures(){
+void FeatureTracker::updateFeatures(cv::Mat img){
+
+/*
+	cv::calcOpticalFlowPyrLK(oldFrame.image, newFrame.image, oldPoints, newPoints, status, error, cv::Size(21, 21), 3,
+			cv::TermCriteria(cv::TermCriteria::COUNT+cv::TermCriteria::EPS, 30, 0.01), 0, this->MIN_EIGEN_VALUE);*/
 
 }
 

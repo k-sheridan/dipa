@@ -26,7 +26,7 @@
 #define MINIMUM_INITIAL_MATCHES 4
 
 // maximium per pixel error to be unti deemed outlier
-#define MAX_ICP_ERROR 2.5
+#define MAX_ICP_ERROR 3.0
 
 //END ICP
 
@@ -58,9 +58,11 @@
 
 #define NUM_FEATURES 50
 
+#define MINIMUM_TRACKABLE_FEATURES 4
+
 //END PLANAR ODOM
 
-#define MINIMUM_
+#define ODOM_TOPIC "/dipa/odom"
 
 #define BOTTOM_CAMERA_TOPIC "/m7/camera/image_rect"
 #define BOTTOM_CAMERA_FRAME "bottomCamera"

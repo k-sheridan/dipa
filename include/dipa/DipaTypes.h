@@ -144,7 +144,7 @@ struct Matches {
 	double sumNorms() {
 		double error = 0;
 		for (auto e : matches) {
-			ROS_DEBUG_STREAM("summing: " << e.pixelNorm);
+			//ROS_DEBUG_STREAM("summing: " << e.pixelNorm);
 			error += e.pixelNorm;
 		}
 
