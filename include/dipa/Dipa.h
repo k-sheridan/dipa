@@ -64,6 +64,8 @@ public:
 	cv::Size image_size;
 	cv::Mat_<float> image_K;
 
+	bool TRACKING_LOST;
+
 	std::vector<cv::Point2f> detected_corners;
 
 	DipaState state;

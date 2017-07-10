@@ -35,6 +35,8 @@ Dipa::Dipa(tf::Transform initial_world_to_base_transform, bool debug) {
 		return;
 	}
 
+	TRACKING_LOST = false; //we have a good initial guess
+
 	//set the initial guess to the passed in transform
 	//this->state.updatePose(initial_world_to_base_transform, ros::Time::now()); // this will cause a problem with datasets
 	this->state.updatePose(initial_world_to_base_transform, ros::Time(0));
@@ -56,6 +58,9 @@ Dipa::~Dipa() {
 void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs::CameraInfoConstPtr& cam)
 //void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img)
 {
+
+	ROS_WARN_COND(TRACKING_LOST, "TRACKING LOST! waiting for pose update to reinitialize");
+
 	tf::StampedTransform c2b;
 	try {
 		tf_listener.lookupTransform(CAMERA_FRAME, BASE_FRAME,
@@ -147,8 +152,15 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 	}
 
 
-	//TODO check if tracking has been lost
-	this->publishOdometry();
+	// final outlier checks
+	if(!this->fitsPositionalConstraints(this->state.getCurrentBestPose()))
+	{
+		TRACKING_LOST = true;
+		ROS_WARN("TRACKING HAS BEEN LOST! the pose estimate is in an extreme position. will now attempt to reinitialize");
+	}
+
+
+	if(!TRACKING_LOST){this->publishOdometry();}
 
 }
 

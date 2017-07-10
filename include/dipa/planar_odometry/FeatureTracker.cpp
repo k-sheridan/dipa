@@ -115,6 +115,15 @@ void FeatureTracker::replenishFeatures(cv::Mat img) {
 					cv::flann::KDTreeIndexParams());
 		}*/
 
+		//image which is used to check if a close feature already exists
+		cv::Mat checkImg = cv::Mat::zeros(img.size(), CV_8U);
+		for(auto e : this->state.features)
+		{
+			cv::drawMarker(checkImg, e.px, cv::Scalar(255), cv::MARKER_SQUARE, MIN_NEW_FEATURE_DIST * 2, MIN_NEW_FEATURE_DIST);
+		}
+
+
+
 		for (int i = 0; i < needed && i < fast_kp.size(); i++) {
 			/*if (this->state.features.size() > 0) {
 				//make sure that this corner is not too close to any old corners
@@ -132,6 +141,14 @@ void FeatureTracker::replenishFeatures(cv::Mat img) {
 					continue;
 				}
 			}*/
+
+			//check if there is already a close feature
+			if(checkImg.at<unsigned char>(fast_kp.at(i).pt))
+			{
+				ROS_DEBUG("feature too close to previous feature, not adding");
+				needed++; // we need one more now
+				continue;
+			}
 
 			Feature new_ft;
 
