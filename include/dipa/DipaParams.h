@@ -24,23 +24,26 @@
 
 #define CONVERGENCE_DELTA 0.1
 
+//OUTLIER DETECTION
 //maximum normal for a correspondence in pixels
 #define USE_MAX_NORM true
 #define MAX_NORM 25
 
+//OUTLIER DETECTION
 //minimum initial matches after huber max norm
 #define MINIMUM_INITIAL_MATCHES 4
 //minimum huber matches after icp converge
 #define MINIMUM_FINAL_MATCHES 10
 #define MINIMUM_HUBER_RATIO 0.5
 
+//OUTLIER DETECTION
 //position constraints on grid alignments
 //IMPORTANT change these constraints based on the grid
 //x and y constraints are determined by the grid size specified
 #define ICP_MAX_Z 5
 #define ICP_MIN_Z 0.5
 
-
+//OUTLIER DETECTION
 // maximium per pixel error to be unti deemed outlier
 #define MAX_ICP_ERROR 1.5
 
@@ -77,6 +80,10 @@
 #define NUM_FEATURES 20
 
 #define MINIMUM_TRACKABLE_FEATURES 4
+
+//OUTLIER DETECTION
+// if icp has not realigned vo since this time, we have lost tracking
+#define MAXIMUM_TIME_SINCE_REALIGNMENT 5
 
 //END PLANAR ODOM
 

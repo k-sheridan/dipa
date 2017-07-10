@@ -43,7 +43,7 @@ Dipa::Dipa(tf::Transform initial_world_to_base_transform, bool debug) {
 
 	//initialize vo with the guess
 	//TODO transform to the camera
-	this->vo.updatePose(initial_world_to_base_transform * b2c);
+	this->vo.updatePose(initial_world_to_base_transform * b2c, ros::Time(0));
 
 	if(!debug)
 	{
@@ -141,7 +141,7 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 		ROS_INFO_STREAM("GOOD GRID ALIGNMENT WITH ERROR: " << icp_ppe);
 		ROS_ASSERT(icp_ppe != -1);
 
-		this->vo.updatePose(w2c_aligned); // update vo's pose estimate and its pixel depth's
+		this->vo.updatePose(w2c_aligned, img->header.stamp); // update vo's pose estimate and its pixel depth's
 
 		//manually replace the dipa state's current estimate
 		this->state.manualPoseUpdate(w2c_aligned * c2b, img->header.stamp);
@@ -157,6 +157,12 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 	{
 		TRACKING_LOST = true;
 		ROS_WARN("TRACKING HAS BEEN LOST! the pose estimate is in an extreme position. will now attempt to reinitialize");
+	}
+
+	if(this->vo.state.getTimeSinceLastRealignment(img->header.stamp) > MAXIMUM_TIME_SINCE_REALIGNMENT)
+	{
+		TRACKING_LOST = true;
+		ROS_WARN_STREAM("TRACKING HAS BEEN LOST! icp has not realigned the pose in " << this->vo.state.getTimeSinceLastRealignment(img->header.stamp) <<" seconds. will now attempt to reinitialize");
 	}
 
 

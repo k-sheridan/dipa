@@ -80,6 +80,22 @@ bool FeatureTracker::computePose(double& perPixelError) {
 
 	cv::solvePnP(obj_pts, img_pts, this->K, cv::noArray(), rvec, tvec, true, cv::SOLVEPNP_ITERATIVE);
 
+
+	//compute the error for this solution
+	std::vector<cv::Point2d> proj;
+	cv::projectPoints(obj_pts, rvec, tvec, this->K, cv::noArray(), proj);
+	double err = 0;
+	for(int i = 0; i < proj.size(); i++)
+	{
+		double dx = proj[i].x-img_pts[i].x;
+		double dy = proj[i].y-img_pts[i].y;
+		err += sqrt(dx*dx + dy*dy);
+	}
+
+	this->state.ppe = err / (double)proj.size();
+
+	ROS_DEBUG_STREAM("VO PPE: " << this->state.ppe);
+
 	//get the updated transform back
 	this->state.currentPose = this->rvecAndtvec2tf(tvec, rvec).inverse(); // invert back to w2c
 
@@ -88,12 +104,15 @@ bool FeatureTracker::computePose(double& perPixelError) {
 	return true;
 }
 
-void FeatureTracker::updatePose(tf::Transform w2c) {
+void FeatureTracker::updatePose(tf::Transform w2c, ros::Time t) {
 	this->state.currentPose = w2c; // set the new pose
 
 	ROS_INFO("GRID HAS ALIGNED: UPDATING THE VO POSE AND OBJECT POSITIONS TO CORRECT FOR DRIFT" );
 
 	this->state.updateObjectPositions(this->K); // update the object positions to eliminate the drift
+
+	//set the time at this update
+	this->state.time_at_last_realignment = t;
 }
 
 /*

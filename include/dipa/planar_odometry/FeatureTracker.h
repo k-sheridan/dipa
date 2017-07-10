@@ -61,6 +61,10 @@ public:
 	struct VOState{
 		std::vector<Feature> features;
 
+		ros::Time time_at_last_realignment;
+
+		double ppe;
+
 		cv::Mat currentImg; // the image that the features are currently in
 
 		tf::Transform currentPose; // w2c transform
@@ -96,6 +100,15 @@ public:
 			}
 
 			return obj;
+		}
+
+		double getTimeSinceLastRealignment(ros::Time t){
+			if(this->time_at_last_realignment == ros::Time(0))
+			{
+				ROS_DEBUG("setting the first alignment time for dataset");
+				this->time_at_last_realignment = t;
+			}
+			return (t - this->time_at_last_realignment).toSec();
 		}
 
 		/*
@@ -142,7 +155,7 @@ public:
 
 	bool computePose(double& perPixelError);
 
-	void updatePose(tf::Transform w2c);
+	void updatePose(tf::Transform w2c, ros::Time t);
 
 	void replenishFeatures(cv::Mat img);
 
