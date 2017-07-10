@@ -94,6 +94,8 @@ public:
 
 	tf::Transform rvecAndtvec2tf(cv::Mat tvec, cv::Mat rvec);
 
+	bool fitsPositionalConstraints(tf::Transform w2c);
+
 	tf::Transform runICP(tf::Transform w2c_guess, double& ppe, bool& pass);
 
 	void publishOdometry();

@@ -12,6 +12,12 @@
 
 #define SUPER_DEBUG true
 
+//GRID RENDERER
+#define GRID_WIDTH 2
+#define GRID_HEIGHT 4
+#define GRID_SPACING 0.75
+#define INNER_LINE_THICKNESS 0.05
+#define OUTER_LINE_THICKNESS 0.05
 
 //ICP
 #define MAX_ITERATIONS 20
@@ -27,6 +33,13 @@
 //minimum huber matches after icp converge
 #define MINIMUM_FINAL_MATCHES 10
 #define MINIMUM_HUBER_RATIO 0.5
+
+//position constraints on grid alignments
+//IMPORTANT change these constraints based on the grid
+//x and y constraints are determined by the grid size specified
+#define ICP_MAX_Z 5
+#define ICP_MIN_Z 0.5
+
 
 // maximium per pixel error to be unti deemed outlier
 #define MAX_ICP_ERROR 1.5

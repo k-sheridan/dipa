@@ -389,6 +389,29 @@ tf::Transform Dipa::rvecAndtvec2tf(cv::Mat tvec, cv::Mat rvec){
 }
 
 /*
+ * tests if the pose estimate is reasonable by its position estimate
+ */
+bool Dipa::fitsPositionalConstraints(tf::Transform w2c)
+{
+	if(w2c.getOrigin().z() < ICP_MIN_Z || w2c.getOrigin().z() > ICP_MAX_Z)
+	{
+		return false;
+	}
+
+	if(w2c.getOrigin().x() < (-(GRID_WIDTH * GRID_SPACING) / 2) || w2c.getOrigin().x() > ((GRID_WIDTH * GRID_SPACING) / 2))
+	{
+		return false;
+	}
+
+	if(w2c.getOrigin().y() < (-(GRID_HEIGHT * GRID_SPACING) / 2) || w2c.getOrigin().y() > ((GRID_HEIGHT * GRID_SPACING) / 2))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+/*
  * runs iterative closest point algorithm modified to work with 2d to 3d correspondences.
  * takes a tf transform representing the transform from the world coordinate frame to the camera coordinate frame
  * this transform should be the current best guess of the transform
@@ -556,9 +579,18 @@ tf::Transform Dipa::runICP(tf::Transform w2c_guess, double& ppe, bool& pass)
 
 	//all outlier tests have passed
 
+	tf::Transform final_w2c = this->rvecAndtvec2tf(tvec, rvec).inverse();
+
+	if(!this->fitsPositionalConstraints(final_w2c))
+	{
+		ROS_WARN_STREAM("pose does not fit positional constraints: x: " << final_w2c.getOrigin().x() << " y: " << final_w2c.getOrigin().y() << " z: " << final_w2c.getOrigin().z());
+		pass = false;
+		return w2c_guess;
+	}
+
 	pass = true;
 
-	return this->rvecAndtvec2tf(tvec, rvec).inverse(); // return the w2c guess
+	return final_w2c;  // return the best w2c guess
 
 }
 
