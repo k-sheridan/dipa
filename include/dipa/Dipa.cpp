@@ -145,6 +145,15 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 
 		//manually replace the dipa state's current estimate
 		this->state.manualPoseUpdate(w2c_aligned * c2b, img->header.stamp);
+
+		if(TRACKING_LOST)
+		{
+			//if we have passed all outlier checks we have regained tracking internally
+			ROS_INFO("REGAINED TRACKING FROM A INTERNAL GRID ALIGNMENT. MAY BE WRONG.");
+			TRACKING_LOST = false;
+			// return to prevent a false velocity/omega from being published
+			return;
+		}
 	}
 	else
 	{
