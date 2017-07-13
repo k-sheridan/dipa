@@ -16,10 +16,14 @@ Dipa::Dipa(tf::Transform initial_world_to_base_transform, bool debug) {
 
 
 	//setup realignment sub
-	this->pose_realignment_sub = nh.subscribe(REALIGNMENT_TOPIC, 2, &Dipa::realignmentCb, this);
+	this->pose_realignment_sub = nh.subscribe<geometry_msgs::PoseWithCovarianceStamped>(REALIGNMENT_TOPIC, 2, &Dipa::realignmentCb, this);
 	this->time_at_last_realignment = ros::Time(0);
 
 	this->odom_pub = nh.advertise<nav_msgs::Odometry>(ODOM_TOPIC, 1);
+
+#if PUBLISH_INSIGHT
+	this->insight_pub = nh.advertise<sensor_msgs::Image>(INSIGHT_TOPIC, 1);
+#endif
 
 	tf::StampedTransform b2c;
 
@@ -216,6 +220,12 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 	}
 
 
+#if PUBLISH_INSIGHT
+	ROS_DEBUG("pub insight start");
+	this->publishInsight(scaled_img, icp_good);
+	ROS_DEBUG("pub insight end");
+#endif
+
 	// final outlier checks
 	if(!this->fitsPositionalConstraints(this->state.getCurrentBestPose()))
 	{
@@ -254,12 +264,14 @@ void Dipa::detectFeatures(cv::Mat scaled_img)
 
 	cv::normalize( harris, harris_norm, 0, 255, cv::NORM_MINMAX, CV_32FC1, cv::Mat() );
 	cv::convertScaleAbs( harris_norm, harris_norm_scaled );*/
+/*
 #if USE_FAST_CORNERS
 	cv::Mat fast_blur;
 	cv::GaussianBlur(scaled_img, fast_blur, cv::Size(0, 0), FAST_BLUR_SIGMA);
 	std::vector<cv::KeyPoint> fast_kp;
 	cv::FAST(fast_blur, fast_kp, FAST_THRESHOLD, true, cv::FastFeatureDetector::TYPE_9_16);
 #endif
+*/
 
 	//detect hough lines
 	cv::Mat canny;
@@ -269,8 +281,9 @@ void Dipa::detectFeatures(cv::Mat scaled_img)
 
 	cv::HoughLines(canny, lines, 1, CV_PI/180, HOUGH_THRESH, 0, 0);
 
+	ROS_DEBUG("starting intersect alg");
 	std::vector<cv::Point2f> intersects =  this->findLineIntersections(lines, cv::Rect(0, 0, canny.cols, canny.rows));
-
+	ROS_DEBUG("finish intersect alg");
 	ROS_DEBUG("detect end");
 
 #if SUPER_DEBUG
@@ -291,9 +304,11 @@ void Dipa::detectFeatures(cv::Mat scaled_img)
 		pt2.y = cvRound(y0 - 1000*(a));
 		cv::line( out, pt1, pt2, cv::Scalar(255, 255, 0), 2, CV_AA);
 	}
+/*
 #if USE_FAST_CORNERS
 	cv::drawKeypoints(out, fast_kp, out, cv::Scalar(0, 0, 255));
 #endif
+*/
 	cv::Mat final;
 	cv::cvtColor(canny,canny,CV_GRAY2RGB);
 
@@ -310,6 +325,7 @@ void Dipa::detectFeatures(cv::Mat scaled_img)
 
 	this->detected_corners = intersects; // set the corners
 
+/*
 	//if the user wants to include fast corners
 #if USE_FAST_CORNERS
 	for(auto e : fast_kp)
@@ -317,6 +333,7 @@ void Dipa::detectFeatures(cv::Mat scaled_img)
 		this->detected_corners.push_back(e.pt);
 	}
 #endif
+*/
 
 }
 
@@ -628,6 +645,10 @@ tf::Transform Dipa::runICP(tf::Transform w2c_guess, double& ppe, bool& pass)
 
 	Matches huber = matches.performHuberMaxNorm(MAX_NORM);
 
+#if PUBLISH_INSIGHT
+	this->alignment = huber;
+#endif
+
 	if(huber.matches.size() < MINIMUM_FINAL_MATCHES)
 	{
 		ROS_WARN_STREAM("huber matches too low: " << huber.matches.size());
@@ -714,5 +735,48 @@ void Dipa::publishOdometry()
 	msg.twist.twist.linear.y = this->state.getBaseFrameVelocity().y();
 	msg.twist.twist.linear.z = this->state.getBaseFrameVelocity().z();
 
+	// twist covariance = CONST * VO_PPE
+	if(this->vo.state.ppe == 0)
+		this->vo.state.ppe = 0.00001;
+
+	msg.twist.covariance.at(0) = this->vo.state.ppe;
+	msg.twist.covariance.at(7) = this->vo.state.ppe;
+	msg.twist.covariance.at(14) = this->vo.state.ppe;
+	msg.twist.covariance.at(21) = this->vo.state.ppe;
+	msg.twist.covariance.at(28) = this->vo.state.ppe;
+	msg.twist.covariance.at(35) = this->vo.state.ppe;
+
 	this->odom_pub.publish(msg);
+}
+
+
+void Dipa::publishInsight(cv::Mat in, bool grid_aligned){
+
+	cv::Mat src;
+
+	cv::cvtColor(in, src, CV_GRAY2BGR);
+
+	for(auto e : this->detected_corners)
+	{
+		cv::drawMarker(src, e, cv::Scalar(255, 255, 0), cv::MARKER_DIAMOND, 4);
+	}
+
+	for(auto e : this->vo.state.features){
+		cv::drawMarker(src, e.px, cv::Scalar(255, 0, 0), cv::MARKER_STAR, 4);
+	}
+
+	this->alignment.draw(src);
+
+	sensor_msgs::Image img;
+
+	cv_bridge::CvImage cv_img;
+
+	cv_img.image = src;
+	cv_img.header.frame_id = CAMERA_FRAME;
+	cv_img.encoding = "bgr8";
+
+	cv_img.toImageMsg(img);
+
+	this->insight_pub.publish(img);
+
 }

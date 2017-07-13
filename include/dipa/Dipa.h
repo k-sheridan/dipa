@@ -74,6 +74,12 @@ public:
 
 	ros::Publisher odom_pub;
 
+#if PUBLISH_INSIGHT
+	//insight
+	ros::Publisher insight_pub;
+	Matches alignment;
+#endif
+
 	ros::Subscriber pose_realignment_sub;
 	ros::Time time_at_last_realignment; //  the msg stamp of the last pose realignment
 
@@ -109,6 +115,8 @@ public:
 	tf::Transform runICP(tf::Transform w2c_guess, double& ppe, bool& pass);
 
 	void publishOdometry();
+
+	void publishInsight(cv::Mat src,  bool grid_aligned);
 };
 
 #endif /* DIPA_INCLUDE_DIPA_DIPA_H_ */
