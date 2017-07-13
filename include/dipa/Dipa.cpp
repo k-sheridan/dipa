@@ -210,6 +210,13 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 			//if we have passed all outlier checks we have regained tracking internally
 			ROS_INFO("REGAINED TRACKING FROM A INTERNAL GRID ALIGNMENT. MAY BE WRONG.");
 			TRACKING_LOST = false;
+
+#if PUBLISH_INSIGHT
+			ROS_DEBUG("pub insight start");
+			this->publishInsight(scaled_img, icp_good);
+			ROS_DEBUG("pub insight end");
+#endif
+
 			// return to prevent a false velocity/omega from being published
 			return;
 		}
@@ -264,14 +271,14 @@ void Dipa::detectFeatures(cv::Mat scaled_img)
 
 	cv::normalize( harris, harris_norm, 0, 255, cv::NORM_MINMAX, CV_32FC1, cv::Mat() );
 	cv::convertScaleAbs( harris_norm, harris_norm_scaled );*/
-/*
+	/*
 #if USE_FAST_CORNERS
 	cv::Mat fast_blur;
 	cv::GaussianBlur(scaled_img, fast_blur, cv::Size(0, 0), FAST_BLUR_SIGMA);
 	std::vector<cv::KeyPoint> fast_kp;
 	cv::FAST(fast_blur, fast_kp, FAST_THRESHOLD, true, cv::FastFeatureDetector::TYPE_9_16);
 #endif
-*/
+	 */
 
 	//detect hough lines
 	cv::Mat canny;
@@ -304,11 +311,11 @@ void Dipa::detectFeatures(cv::Mat scaled_img)
 		pt2.y = cvRound(y0 - 1000*(a));
 		cv::line( out, pt1, pt2, cv::Scalar(255, 255, 0), 2, CV_AA);
 	}
-/*
+	/*
 #if USE_FAST_CORNERS
 	cv::drawKeypoints(out, fast_kp, out, cv::Scalar(0, 0, 255));
 #endif
-*/
+	 */
 	cv::Mat final;
 	cv::cvtColor(canny,canny,CV_GRAY2RGB);
 
@@ -325,7 +332,7 @@ void Dipa::detectFeatures(cv::Mat scaled_img)
 
 	this->detected_corners = intersects; // set the corners
 
-/*
+	/*
 	//if the user wants to include fast corners
 #if USE_FAST_CORNERS
 	for(auto e : fast_kp)
@@ -333,7 +340,7 @@ void Dipa::detectFeatures(cv::Mat scaled_img)
 		this->detected_corners.push_back(e.pt);
 	}
 #endif
-*/
+	 */
 
 }
 
@@ -645,10 +652,6 @@ tf::Transform Dipa::runICP(tf::Transform w2c_guess, double& ppe, bool& pass)
 
 	Matches huber = matches.performHuberMaxNorm(MAX_NORM);
 
-#if PUBLISH_INSIGHT
-	this->alignment = huber;
-#endif
-
 	if(huber.matches.size() < MINIMUM_FINAL_MATCHES)
 	{
 		ROS_WARN_STREAM("huber matches too low: " << huber.matches.size());
@@ -758,25 +761,34 @@ void Dipa::publishInsight(cv::Mat in, bool grid_aligned){
 
 	for(auto e : this->detected_corners)
 	{
-		cv::drawMarker(src, e, cv::Scalar(255, 255, 0), cv::MARKER_DIAMOND, 4);
+		cv::drawMarker(src, e, cv::Scalar(255, 0, 0), cv::MARKER_DIAMOND, 4);
 	}
 
 	for(auto e : this->vo.state.features){
-		cv::drawMarker(src, e.px, cv::Scalar(255, 0, 0), cv::MARKER_STAR, 4);
+		cv::drawMarker(src, e.px, cv::Scalar(255, 0, 255), cv::MARKER_SQUARE, 6);
 	}
 
-	this->alignment.draw(src);
+	this->renderer.setW2C(this->vo.state.currentPose); // render the grid with the current w2c
+	Matches m = this->renderer.renderGridCorners();
 
-	sensor_msgs::Image img;
+	//draw
+	for(auto e : m.matches){
+		if(grid_aligned)
+		{
+			cv::drawMarker(src, e.obj_px, cv::Scalar(0, 255, 0), cv::MARKER_TRIANGLE_UP, 8);
+		}
+		else
+		{
+			cv::drawMarker(src, e.obj_px, cv::Scalar(0, 0, 255), cv::MARKER_TRIANGLE_UP, 8);
+		}
+	}
 
 	cv_bridge::CvImage cv_img;
 
 	cv_img.image = src;
 	cv_img.header.frame_id = CAMERA_FRAME;
-	cv_img.encoding = "bgr8";
+	cv_img.encoding = sensor_msgs::image_encodings::BGR8;
 
-	cv_img.toImageMsg(img);
-
-	this->insight_pub.publish(img);
+	this->insight_pub.publish(cv_img.toImageMsg());
 
 }
