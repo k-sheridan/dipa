@@ -15,6 +15,10 @@ Dipa::Dipa(tf::Transform initial_world_to_base_transform, bool debug) {
 	image_transport::CameraSubscriber bottom_cam_sub = it.subscribeCamera(BOTTOM_CAMERA_TOPIC, 2, &Dipa::bottomCamCb, this);
 
 
+	//setup realignment sub
+	this->pose_realignment_sub = nh.subscribe(REALIGNMENT_TOPIC, 2, &Dipa::realignmentCb, this);
+	this->time_at_last_realignment = ros::Time(0);
+
 	this->odom_pub = nh.advertise<nav_msgs::Odometry>(ODOM_TOPIC, 1);
 
 	tf::StampedTransform b2c;
@@ -55,6 +59,42 @@ Dipa::Dipa(tf::Transform initial_world_to_base_transform, bool debug) {
 Dipa::~Dipa() {
 
 }
+
+void Dipa::realignmentCb(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg)
+{
+	//update the time
+	this->time_at_last_realignment = msg->header.stamp;
+
+	// if tracking is lost update the pose of vo and the state
+	if(TRACKING_LOST)
+	{
+		ROS_INFO_STREAM("GOT POSE UPDATE TO REINITIALIZE TRACKING WITH!");
+
+		//get the transform from the msg frame to CAMERA
+		tf::StampedTransform b2c;
+		try {
+			tf_listener.lookupTransform(msg->header.frame_id, CAMERA_FRAME,
+					ros::Time(0), b2c);
+		} catch (tf::TransformException& e) {
+			ROS_ERROR_STREAM(e.what());
+			ROS_ERROR("THIS POSE WILL NOT BE USED TO REALIGN!");
+			TRACKING_LOST = true;
+			return; //
+		}
+
+		tf::Transform w2b = tf::Transform(tf::Quaternion(msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z, msg->pose.pose.orientation.w),
+				tf::Vector3(msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z));
+
+		this->vo.updatePose(w2b*b2c, msg->header.stamp); // update vo's pose estimate and its pixel depth's
+
+		//manually replace the dipa state's current estimate
+		this->state.manualPoseUpdate(w2b, msg->header.stamp);
+
+
+		TRACKING_LOST = false; // regained tracking
+	}
+}
+
 void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs::CameraInfoConstPtr& cam)
 //void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img)
 {
@@ -66,7 +106,9 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 		tf_listener.lookupTransform(CAMERA_FRAME, BASE_FRAME,
 				ros::Time(0), c2b);
 	} catch (tf::TransformException& e) {
-		ROS_WARN_STREAM(e.what());
+		ROS_ERROR_STREAM(e.what());
+		ROS_ERROR("THIS IMAGE WILL NOT BE TRACKED!");
+		return; //
 	}
 
 	cv::Mat temp = cv_bridge::toCvShare(img, img->encoding)->image.clone();
@@ -115,6 +157,19 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 	{
 		ROS_DEBUG("had good vo estimate: updating the base pose");
 		this->state.updatePose(this->vo.state.currentPose * c2b, img->header.stamp);
+
+		//check if the ppe is too high
+		if(this->vo.state.ppe > MAXIMUM_VO_PPE)
+		{
+			TRACKING_LOST = true;
+			ROS_WARN_STREAM("LOST TRACKING: VO PPE too high: " << this->vo.state.ppe);
+		}
+
+	}
+	else
+	{
+		ROS_WARN("LOST TRACKING: VO has FAILED!");
+		TRACKING_LOST = true;
 	}
 
 
@@ -174,8 +229,11 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 		ROS_WARN_STREAM("TRACKING HAS BEEN LOST! icp has not realigned the pose in " << this->vo.state.getTimeSinceLastRealignment(img->header.stamp) <<" seconds. will now attempt to reinitialize");
 	}
 
-
 	if(!TRACKING_LOST){this->publishOdometry();}
+
+
+	//alert the user if there has not been a realignment pose published
+	if(this->time_at_last_realignment == ros::Time(0)){ROS_WARN("REALIGNMENT POSE HAS NOT BEEN PUBLISHED YET");}
 
 }
 

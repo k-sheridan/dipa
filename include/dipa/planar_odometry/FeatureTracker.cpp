@@ -93,6 +93,7 @@ bool FeatureTracker::computePose(double& perPixelError) {
 	}
 
 	this->state.ppe = err / (double)proj.size();
+	perPixelError = this->state.ppe;
 
 	ROS_DEBUG_STREAM("VO PPE: " << this->state.ppe);
 

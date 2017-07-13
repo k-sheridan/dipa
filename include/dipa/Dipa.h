@@ -44,6 +44,8 @@
 
 #include <nav_msgs/Odometry.h>
 
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
+
 #include <dipa/DipaParams.h>
 
 #include <dipa/GridRenderer.h>
@@ -72,6 +74,9 @@ public:
 
 	ros::Publisher odom_pub;
 
+	ros::Subscriber pose_realignment_sub;
+	ros::Time time_at_last_realignment; //  the msg stamp of the last pose realignment
+
 	//cv::flann::Index* kdtree;
 
 	Dipa(tf::Transform initial_world_to_base_transform, bool debug=false);
@@ -83,6 +88,9 @@ public:
 
 	//void bottomCamCb(const sensor_msgs::ImageConstPtr& img);
 	void bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs::CameraInfoConstPtr& cam);
+
+	//realignment sub
+	void realignmentCb(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
 
 	//void setupKDTree();
 

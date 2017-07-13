@@ -85,6 +85,9 @@
 // if icp has not realigned vo since this time, we have lost tracking
 #define MAXIMUM_TIME_SINCE_REALIGNMENT 5
 
+//if the ppe of our planar odometry exceeds this value we have lost odometry
+#define MAXIMUM_VO_PPE 7.0
+
 //END PLANAR ODOM
 
 #define ODOM_TOPIC "dipa/odom"
