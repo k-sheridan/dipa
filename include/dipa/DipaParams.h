@@ -10,7 +10,7 @@
 
 
 
-#define SUPER_DEBUG true
+#define SUPER_DEBUG false
 
 //GRID RENDERER
 #define GRID_WIDTH 2
@@ -87,7 +87,10 @@
 
 //END PLANAR ODOM
 
-#define ODOM_TOPIC "/dipa/odom"
+#define ODOM_TOPIC "dipa/odom"
+
+// this topic will serve as a last resort for realignment
+#define REALIGNMENT_TOPIC "state/pose"
 
 #define BOTTOM_CAMERA_TOPIC "/m7/camera/image_rect"
 #define CAMERA_FRAME "bottom_camera"
@@ -95,5 +98,9 @@
 #define BASE_FRAME "base_link"
 
 #define WORLD_FRAME "world"
+
+// insight is an image representing the describing the current state of DIPA
+#define PUBLISH_INSIGHT true
+#define INSIGHT_TOPIC "dipa/insight"
 
 #endif /* DIPA_INCLUDE_DIPA_DIPAPARAMS_H_ */
