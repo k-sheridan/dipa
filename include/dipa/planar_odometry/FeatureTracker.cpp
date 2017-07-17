@@ -133,6 +133,8 @@ void FeatureTracker::replenishFeatures(cv::Mat in) {
 
 		int needed = NUM_FEATURES - this->state.features.size();
 
+		ROS_DEBUG_STREAM("need " << needed << "more features");
+
 		/*cv::flann::Index tree;
 
 		if (this->state.features.size() > 0) {
@@ -184,6 +186,7 @@ void FeatureTracker::replenishFeatures(cv::Mat in) {
 
 			if(valid) // feature is valid add it
 			{
+				ROS_DEBUG("adding new feature to vo");
 				this->state.features.push_back(new_ft);
 			}
 			else //feature is aff the grid remove it

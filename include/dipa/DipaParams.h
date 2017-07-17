@@ -10,7 +10,7 @@
 
 
 
-#define SUPER_DEBUG true
+#define SUPER_DEBUG false
 
 //GRID RENDERER
 #define GRID_WIDTH 20
@@ -18,6 +18,9 @@
 #define GRID_SPACING 1
 #define INNER_LINE_THICKNESS 0.04
 #define OUTER_LINE_THICKNESS 0.04
+
+#define ABSOLUTE_MIN_Z 0.001
+#define ABSOLUTE_MAX_Z 5.0
 
 //ICP
 #define MAX_ITERATIONS 20

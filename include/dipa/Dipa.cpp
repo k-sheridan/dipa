@@ -45,6 +45,8 @@ Dipa::Dipa(tf::Transform initial_world_to_base_transform, bool debug) {
 
 	TRACKING_LOST = false; //we have a good initial guess
 
+	vo_initialized = false; // we must init vo before losing tracking set
+
 	//set the initial guess to the passed in transform
 	//this->state.updatePose(initial_world_to_base_transform, ros::Time::now()); // this will cause a problem with datasets
 	this->state.updatePose(initial_world_to_base_transform, ros::Time(0));
@@ -144,6 +146,7 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 		{
 			//compute the new pose
 			good_vo = this->vo.computePose(vo_error);
+			if(!vo_initialized && good_vo){vo_initialized = true; ROS_INFO("VO INITIALIZED");}
 		}
 		else
 		{
@@ -176,8 +179,12 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 	}
 	else
 	{
-		ROS_WARN("LOST TRACKING: VO has FAILED!");
-		TRACKING_LOST = true;
+		if(vo_initialized) // only lose tracking if vo hasnt been init
+		{
+			ROS_WARN("LOST TRACKING: VO has FAILED!");
+			TRACKING_LOST = true;
+		}
+
 	}
 
 
@@ -525,7 +532,7 @@ tf::Transform Dipa::rvecAndtvec2tf(cv::Mat tvec, cv::Mat rvec){
  */
 bool Dipa::fitsPositionalConstraints(tf::Transform w2c)
 {
-	if(w2c.getOrigin().z() < ICP_MIN_Z || w2c.getOrigin().z() > ICP_MAX_Z)
+	if(w2c.getOrigin().z() < ABSOLUTE_MIN_Z || w2c.getOrigin().z() > ABSOLUTE_MAX_Z)
 	{
 		return false;
 	}
@@ -582,7 +589,7 @@ tf::Transform Dipa::runICP(tf::Transform w2c_guess, double& ppe, bool& pass)
 	cv::imshow("render", blank);
 	cv::waitKey(30);
 	ros::Duration dur(1);
-	dur.sleep();
+	//dur.sleep();
 #endif
 
 	for(int i = 0; i < MAX_ITERATIONS; i++)
@@ -800,17 +807,17 @@ void Dipa::publishInsight(cv::Mat in, bool grid_aligned){
 	ROS_DEBUG_STREAM("rendering grid corners with " << m.matches.size() << "corners");
 	if(m.matches.size() > 0)
 	{
-	//draw
-	for(auto e : m.matches){
-		if(grid_aligned)
-		{
-			cv::drawMarker(src, e.obj_px, cv::Scalar(0, 255, 0), cv::MARKER_CROSS, 8);
+		//draw
+		for(auto e : m.matches){
+			if(grid_aligned)
+			{
+				cv::drawMarker(src, e.obj_px, cv::Scalar(0, 255, 0), cv::MARKER_CROSS, 8);
+			}
+			else
+			{
+				cv::drawMarker(src, e.obj_px, cv::Scalar(0, 0, 255), cv::MARKER_CROSS, 8);
+			}
 		}
-		else
-		{
-			cv::drawMarker(src, e.obj_px, cv::Scalar(0, 0, 255), cv::MARKER_CROSS, 8);
-		}
-	}
 	}
 	else
 	{

@@ -68,6 +68,7 @@ public:
 	cv::Mat_<float> image_K;
 
 	bool TRACKING_LOST;
+	bool vo_initialized;
 
 	std::vector<cv::Point2f> detected_corners;
 

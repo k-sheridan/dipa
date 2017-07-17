@@ -216,21 +216,29 @@ public:
 
 			double dt = (current_best_t - last_best_t).toSec();
 
-			ROS_ASSERT(dt > 0);
+			ROS_DEBUG_STREAM("deriving twist with dt: " << dt);
+			//ROS_ASSERT(dt > 0);
+			if(dt <= 0)
+			{
+				ROS_WARN_STREAM("can't derive twist with dt: " << dt);
+			}
+			else
+			{
 
-			double r, p, y;
-			delta.getBasis().getRPY(r, p, y);
-			omega.setX(r);
-			omega.setY(p);
-			omega.setZ(y);
-			omega /= dt;
+				double r, p, y;
+				delta.getBasis().getRPY(r, p, y);
+				omega.setX(r);
+				omega.setY(p);
+				omega.setZ(y);
+				omega /= dt;
 
-			vel = (delta.getOrigin())
-							/ dt; // this transforms the delta into the base frame
+				vel = (delta.getOrigin())
+									/ dt; // this transforms the delta into the base frame
 
-			ROS_DEBUG_STREAM("DERIVED TWIST vel: " << vel.x() << ", " << vel.y() << ", " << vel.z() << "\n omega: " << omega.x() << ", " << omega.y() << ", " << omega.z());
+				ROS_DEBUG_STREAM("DERIVED TWIST vel: " << vel.x() << ", " << vel.y() << ", " << vel.z() << "\n omega: " << omega.x() << ", " << omega.y() << ", " << omega.z());
 
-			twist_set = true;
+				twist_set = true;
+			}
 		}
 
 		current_pose_set = true;
