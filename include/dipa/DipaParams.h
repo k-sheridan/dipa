@@ -10,14 +10,14 @@
 
 
 
-#define SUPER_DEBUG false
+#define SUPER_DEBUG true
 
 //GRID RENDERER
-#define GRID_WIDTH 2
-#define GRID_HEIGHT 4
-#define GRID_SPACING 0.75
-#define INNER_LINE_THICKNESS 0.05
-#define OUTER_LINE_THICKNESS 0.05
+#define GRID_WIDTH 20
+#define GRID_HEIGHT 20
+#define GRID_SPACING 1
+#define INNER_LINE_THICKNESS 0.04
+#define OUTER_LINE_THICKNESS 0.04
 
 //ICP
 #define MAX_ITERATIONS 20
@@ -95,7 +95,7 @@
 // this topic will serve as a last resort for realignment
 #define REALIGNMENT_TOPIC "state/pose"
 
-#define BOTTOM_CAMERA_TOPIC "/m7/camera/image_rect"
+#define BOTTOM_CAMERA_TOPIC "/bottom_camera/image_rect"
 #define CAMERA_FRAME "bottom_camera"
 
 #define BASE_FRAME "base_link"

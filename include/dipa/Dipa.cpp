@@ -123,6 +123,10 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 
 	//set the vo K
 	this->vo.K = this->image_K;
+	//set the render K and size
+	this->renderer.setIntrinsic(this->image_K);
+	this->renderer.setSize(this->image_size);
+
 
 	cv::Mat scaled_img;
 	cv::resize(temp, scaled_img, cv::Size(temp.cols / INVERSE_IMAGE_SCALE, temp.rows / INVERSE_IMAGE_SCALE));
@@ -191,39 +195,47 @@ void Dipa::bottomCamCb(const sensor_msgs::ImageConstPtr& img, const sensor_msgs:
 
 	bool icp_good = false;
 	double icp_ppe = -1;
-	tf::Transform w2c_aligned = this->runICP(this->vo.state.currentPose, icp_ppe, icp_good);
 
-
-	//IF HAD GOOD GRID ALIGNMENT UPDATE THE VO
-	if(icp_good)
+	if(this->detected_corners.size() > 0)
 	{
-		ROS_INFO_STREAM("GOOD GRID ALIGNMENT WITH ERROR: " << icp_ppe);
-		ROS_ASSERT(icp_ppe != -1);
+		tf::Transform w2c_aligned = this->runICP(this->vo.state.currentPose, icp_ppe, icp_good);
 
-		this->vo.updatePose(w2c_aligned, img->header.stamp); // update vo's pose estimate and its pixel depth's
 
-		//manually replace the dipa state's current estimate
-		this->state.manualPoseUpdate(w2c_aligned * c2b, img->header.stamp);
-
-		if(TRACKING_LOST)
+		//IF HAD GOOD GRID ALIGNMENT UPDATE THE VO
+		if(icp_good)
 		{
-			//if we have passed all outlier checks we have regained tracking internally
-			ROS_INFO("REGAINED TRACKING FROM A INTERNAL GRID ALIGNMENT. MAY BE WRONG.");
-			TRACKING_LOST = false;
+			ROS_INFO_STREAM("GOOD GRID ALIGNMENT WITH ERROR: " << icp_ppe);
+			ROS_ASSERT(icp_ppe != -1);
+
+			this->vo.updatePose(w2c_aligned, img->header.stamp); // update vo's pose estimate and its pixel depth's
+
+			//manually replace the dipa state's current estimate
+			this->state.manualPoseUpdate(w2c_aligned * c2b, img->header.stamp);
+
+			if(TRACKING_LOST)
+			{
+				//if we have passed all outlier checks we have regained tracking internally
+				ROS_INFO("REGAINED TRACKING FROM A INTERNAL GRID ALIGNMENT. MAY BE WRONG.");
+				TRACKING_LOST = false;
 
 #if PUBLISH_INSIGHT
-			ROS_DEBUG("pub insight start");
-			this->publishInsight(scaled_img, icp_good);
-			ROS_DEBUG("pub insight end");
+				ROS_DEBUG("pub insight start");
+				this->publishInsight(scaled_img, icp_good);
+				ROS_DEBUG("pub insight end");
 #endif
 
-			// return to prevent a false velocity/omega from being published
-			return;
+				// return to prevent a false velocity/omega from being published
+				return;
+			}
+		}
+		else
+		{
+			ROS_INFO("GRID ALIGNMENT FAILED");
 		}
 	}
-	else
+	else // no detected corners
 	{
-		ROS_INFO("GRID ALIGNMENT FAILED");
+		ROS_ERROR("NO DETECTED CORNERS. DID NOT ATTEMPT TO ALIGN GRID!");
 	}
 
 
@@ -284,11 +296,22 @@ void Dipa::detectFeatures(cv::Mat scaled_img)
 	cv::Mat canny;
 	cv::Canny(scaled_img_blur, canny, CANNY_THRESH_1, CANNY_THRESH_2);
 
+#if SUPER_DEBUG
+	cv::imshow("raw canny", canny);
+	cv::waitKey(30);
+#endif
+
 	std::vector<cv::Vec2f> lines;
 
 	cv::HoughLines(canny, lines, 1, CV_PI/180, HOUGH_THRESH, 0, 0);
 
-	ROS_DEBUG("starting intersect alg");
+	if(lines.size() == 0)
+	{
+		ROS_ERROR("line detection failed to detect lines, please tune. SKIPPING FRAME AND CLEARING CORNERS!");
+		this->detected_corners.clear(); // remove previous detected corners
+		return;
+	}
+	ROS_DEBUG_STREAM("starting intersect alg: " << lines.size());
 	std::vector<cv::Point2f> intersects =  this->findLineIntersections(lines, cv::Rect(0, 0, canny.cols, canny.rows));
 	ROS_DEBUG("finish intersect alg");
 	ROS_DEBUG("detect end");
@@ -759,28 +782,39 @@ void Dipa::publishInsight(cv::Mat in, bool grid_aligned){
 
 	cv::cvtColor(in, src, CV_GRAY2BGR);
 
-	for(auto e : this->detected_corners)
+	if(detected_corners.size() > 0)
 	{
-		cv::drawMarker(src, e, cv::Scalar(255, 0, 0), cv::MARKER_DIAMOND, 4);
+		for(auto e : this->detected_corners)
+		{
+			cv::drawMarker(src, e, cv::Scalar(255, 0, 0), cv::MARKER_DIAMOND, 4);
+		}
 	}
 
 	for(auto e : this->vo.state.features){
 		cv::drawMarker(src, e.px, cv::Scalar(255, 0, 255), cv::MARKER_SQUARE, 6);
 	}
-
+	ROS_DEBUG_STREAM("rendering grid");
 	this->renderer.setW2C(this->vo.state.currentPose); // render the grid with the current w2c
 	Matches m = this->renderer.renderGridCorners();
 
+	ROS_DEBUG_STREAM("rendering grid corners with " << m.matches.size() << "corners");
+	if(m.matches.size() > 0)
+	{
 	//draw
 	for(auto e : m.matches){
 		if(grid_aligned)
 		{
-			cv::drawMarker(src, e.obj_px, cv::Scalar(0, 255, 0), cv::MARKER_TRIANGLE_UP, 8);
+			cv::drawMarker(src, e.obj_px, cv::Scalar(0, 255, 0), cv::MARKER_CROSS, 8);
 		}
 		else
 		{
-			cv::drawMarker(src, e.obj_px, cv::Scalar(0, 0, 255), cv::MARKER_TRIANGLE_UP, 8);
+			cv::drawMarker(src, e.obj_px, cv::Scalar(0, 0, 255), cv::MARKER_CROSS, 8);
 		}
+	}
+	}
+	else
+	{
+		ROS_WARN("there are no projected grid corners for the current estimate.");
 	}
 
 	cv_bridge::CvImage cv_img;
@@ -790,5 +824,5 @@ void Dipa::publishInsight(cv::Mat in, bool grid_aligned){
 	cv_img.encoding = sensor_msgs::image_encodings::BGR8;
 
 	this->insight_pub.publish(cv_img.toImageMsg());
-
+	ROS_DEBUG("end publish");
 }

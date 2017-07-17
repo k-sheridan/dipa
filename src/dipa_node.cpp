@@ -48,10 +48,10 @@ int main(int argc, char **argv) {
 
 	double x, y, z, r, p, yaw;
 
-	ros::param::param<double>("initial_x", x, 0.25);
-	ros::param::param<double>("initial_y", y, -0.75);
+	ros::param::param<double>("initial_x", x, 9);
+	ros::param::param<double>("initial_y", y, -9);
 	ros::param::param<double>("initial_z", z, 1.0);
-	ros::param::param<double>("initial_roll", r, 180);
+	ros::param::param<double>("initial_roll", r, 0);
 	ros::param::param<double>("initial_pitch", p, 0);
 	ros::param::param<double>("initial_yaw", yaw, 0);
 
@@ -60,8 +60,8 @@ int main(int argc, char **argv) {
 	rot.setRPY(r, p, yaw);
 
 
-	//Dipa dipa(tf::Transform(rot, origin));
-	Dipa dipa(tf::Transform(tf::Quaternion(1, 0, 0, 0), tf::Vector3(0, 0, 1)));
+	Dipa dipa(tf::Transform(rot, origin));
+	//Dipa dipa(tf::Transform(tf::Quaternion(1, 0, 0, 0), tf::Vector3(0, 0, 1)));
 
 	return 0;
 }
