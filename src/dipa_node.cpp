@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
 
 	ros::param::param<double>("initial_x", x, 9);
 	ros::param::param<double>("initial_y", y, -9);
-	ros::param::param<double>("initial_z", z, 1.0);
+	ros::param::param<double>("initial_z", z, 0.5);
 	ros::param::param<double>("initial_roll", r, 0);
 	ros::param::param<double>("initial_pitch", p, 0);
 	ros::param::param<double>("initial_yaw", yaw, 0);

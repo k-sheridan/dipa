@@ -100,6 +100,8 @@ bool FeatureTracker::computePose(double& perPixelError) {
 	//get the updated transform back
 	this->state.currentPose = this->rvecAndtvec2tf(tvec, rvec).inverse(); // invert back to w2c
 
+	ROS_DEBUG_STREAM("VO w2c: " << this->state.currentPose.getOrigin().x()  << ", " << this->state.currentPose.getOrigin().y() << ", " << this->state.currentPose.getOrigin().z());
+
 	ROS_DEBUG("done computing motion");
 
 	return true;
@@ -119,10 +121,14 @@ void FeatureTracker::updatePose(tf::Transform w2c, ros::Time t) {
 /*
  * get more features after updating the pose
  */
-void FeatureTracker::replenishFeatures(cv::Mat img) {
+void FeatureTracker::replenishFeatures(cv::Mat in) {
 	//add more features if needed
+	cv::Mat img;
+	cv::GaussianBlur(in, img, cv::Size(5, 5), FAST_BLUR_SIGMA);
+
 	if (this->state.features.size() < NUM_FEATURES) {
 		std::vector<cv::KeyPoint> fast_kp;
+
 		cv::FAST(img, fast_kp, FAST_THRESHOLD, true);
 
 		int needed = NUM_FEATURES - this->state.features.size();

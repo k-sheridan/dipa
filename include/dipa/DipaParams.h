@@ -54,7 +54,7 @@
 //lower this if you have easy corners to detect
 #define INVERSE_IMAGE_SCALE 4.0
 
-#define CANNY_BLUR_SIGMA 1.2
+#define CANNY_BLUR_SIGMA 2.0
 #define CANNY_THRESH_1 50
 #define CANNY_THRESH_2 200
 
@@ -72,10 +72,11 @@
 //PLANAR ODOM
 //fast corner detector for planar odometry
 #define FAST_THRESHOLD 100
+#define FAST_BLUR_SIGMA 0.5
 
 #define KLT_MIN_EIGEN 1e-4
 
-#define MIN_NEW_FEATURE_DIST 2
+#define MIN_NEW_FEATURE_DIST 4
 
 #define NUM_FEATURES 20
 

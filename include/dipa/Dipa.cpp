@@ -28,7 +28,7 @@ Dipa::Dipa(tf::Transform initial_world_to_base_transform, bool debug) {
 	tf::StampedTransform b2c;
 
 	ROS_INFO_STREAM("WAITING FOR TANSFORM FROM " << BASE_FRAME << " TO " << CAMERA_FRAME);
-	if(tf_listener.waitForTransform(BASE_FRAME, CAMERA_FRAME, ros::Time(0), ros::Duration(2))){
+	if(tf_listener.waitForTransform(BASE_FRAME, CAMERA_FRAME, ros::Time(0), ros::Duration(10))){
 		try {
 			tf_listener.lookupTransform(BASE_FRAME, CAMERA_FRAME,
 					ros::Time(0), b2c);
@@ -582,7 +582,7 @@ tf::Transform Dipa::runICP(tf::Transform w2c_guess, double& ppe, bool& pass)
 	cv::imshow("render", blank);
 	cv::waitKey(30);
 	ros::Duration dur(1);
-	//dur.sleep();
+	dur.sleep();
 #endif
 
 	for(int i = 0; i < MAX_ITERATIONS; i++)
